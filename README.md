@@ -56,12 +56,12 @@ The application uses an Excel file (`project_management.xlsx`) with the followin
 
 ## Default Admin Account
 
-- Email: admin@admin.com
+- Email: admin@srmist.com
 - Password: admin123
 
 ## User Registration
 
-- Admin accounts: Use @admin.com email domain
+- Admin accounts: Use @srmist.com email domain
 - Regular users: Use @gmail.com email domain
 
 ## Security Features
