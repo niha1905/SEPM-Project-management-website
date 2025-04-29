@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block title %}Create Task{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Main content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Create New Task</h1>
+            </div>
+
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-body">
+                            <form method="POST" action="{{ url_for('create_task') }}">
+                                <div class="mb-3">
+                                    <label for="title" class="form-label">Task Title</label>
+                                    <input type="text" class="form-control" id="title" name="title" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="description" class="form-label">Description</label>
+                                    <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="project_id" class="form-label">Project</label>
+                                    <select class="form-select" id="project_id" name="project_id" required>
+                                        <option value="">Select Project</option>
+                                        {% for project in projects %}
+                                        <option value="{{ project.id }}">{{ project.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="assigned_to" class="form-label">Assignee</label>
+                                    <select class="form-select" id="assigned_to" name="assigned_to" required>
+                                        <option value="">Select Assignee</option>
+                                        {% for user in users %}
+                                        <option value="{{ user.id }}">{{ user.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="required_skills" class="form-label">Required Skills</label>
+                                    <input type="text" class="form-control" id="required_skills" name="required_skills" placeholder="Enter skills separated by commas">
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="due_date" class="form-label">Due Date</label>
+                                            <input type="date" class="form-control" id="due_date" name="due_date" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="priority" class="form-label">Priority</label>
+                                            <select class="form-select" id="priority" name="priority">
+                                                <option value="High">High</option>
+                                                <option value="Medium" selected>Medium</option>
+                                                <option value="Low">Low</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="estimated_hours" class="form-label">Estimated Hours</label>
+                                    <input type="number" class="form-control" id="estimated_hours" name="estimated_hours" min="0" step="0.5" value="0">
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <button type="submit" class="btn btn-primary">Create Task</button>
+                                    <button type="button" class="btn btn-info" id="analyzeTask">
+                                        <i class="fas fa-robot me-2"></i>Get AI Recommendation
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recommendations Panel -->
+                <div class="col-md-4">
+                    <div id="recommendationsPanel" class="card" style="display: none;">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Skill Recommendations</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="currentMatch">
+                                <h6>Current Assignee Match</h6>
+                                <div class="progress mb-2">
+                                    <div class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <small class="text-muted">Matching Skills:</small>
+                                    <div id="matchingSkills" class="d-flex flex-wrap gap-1"></div>
+                                </div>
+                                <div class="mb-3">
+                                    <small class="text-muted">Missing Skills:</small>
+                                    <div id="missingSkills" class="d-flex flex-wrap gap-1"></div>
+                                </div>
+                            </div>
+
+                            <div id="betterMatches">
+                                <h6>Better Matches</h6>
+                                <div id="betterMatchesList"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Display stored recommendations if any -->
+{% if recommendations %}
+<div class="modal fade" id="recommendationsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Skill Match Recommendations</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-4">
+                    <h6>Current Assignee Match</h6>
+                    <div class="progress mb-2">
+                        <div class="progress-bar" role="progressbar" style="width: {{ recommendations.current_match.percentage }}%" aria-valuenow="{{ recommendations.current_match.percentage }}">
+                            {{ "%.1f"|format(recommendations.current_match.percentage) }}%
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">Matching Skills:</small>
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for skill in recommendations.current_match.matching_skills %}
+                            <span class="badge bg-success">{{ skill }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">Missing Skills:</small>
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for skill in recommendations.current_match.missing_skills %}
+                            <span class="badge bg-danger">{{ skill }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h6>Better Matches</h6>
+                    {% for match in recommendations.better_matches %}
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h6 class="card-title">{{ match.name }}</h6>
+                            <div class="progress mb-2">
+                                <div class="progress-bar" role="progressbar" style="width: {{ match.match_percentage }}%" aria-valuenow="{{ match.match_percentage }}">
+                                    {{ match.match_percentage }}%
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted">Matching Skills:</small>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for skill in match.matching_skills %}
+                                    <span class="badge bg-success">{{ skill }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted">Missing Skills:</small>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for skill in match.missing_skills %}
+                                    <span class="badge bg-danger">{{ skill }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <button class="btn btn-sm btn-primary" onclick="selectAssignee('{{ match.user_id }}', '{{ match.name }}')">
+                                Select Assignee
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const analyzeButton = document.getElementById('analyzeTask');
+    const assignedToSelect = document.getElementById('assigned_to');
+    const requiredSkillsInput = document.getElementById('required_skills');
+
+    var hasRecommendations = "{{ 'true' if recommendations else 'false' }}";
+
+    if (hasRecommendations === 'true') {
+        setTimeout(function() {
+            const recommendationsModal = new bootstrap.Modal(document.getElementById('recommendationsModal'));
+            recommendationsModal.show();
+        }, 100);
+    }
+
+    analyzeButton.addEventListener('click', function() {
+        const title = document.getElementById('title').value;
+        const description = document.getElementById('description').value;
+
+        if (!title || !description) {
+            alert('Please fill in both title and description to get AI recommendations.');
+            return;
+        }
+
+        analyzeButton.disabled = true;
+        analyzeButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Analyzing...';
+
+        fetch('/analyze_task', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: title,
+                description: description
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            analyzeButton.disabled = false;
+            analyzeButton.innerHTML = '<i class="fas fa-robot me-2"></i>Get AI Recommendation';
+
+            if (data.success) {
+                if (!requiredSkillsInput.value && data.required_skills) {
+                    requiredSkillsInput.value = data.required_skills.join(', ');
+                }
+
+                document.getElementById('recommendationsPanel').style.display = 'block';
+
+                const currentAssigneeId = assignedToSelect.value;
+                let currentMatch = data.all_matches.find(m => m.user_id === currentAssigneeId) || data.all_matches[0];
+
+                if (currentMatch) {
+                    document.querySelector('#currentMatch .progress-bar').style.width = `${currentMatch.match_percentage}%`;
+                    document.querySelector('#currentMatch .progress-bar').innerText = `${currentMatch.match_percentage}%`;
+                    updateSkills('matchingSkills', currentMatch.matching_skills, 'bg-success');
+                    updateSkills('missingSkills', currentMatch.missing_skills, 'bg-danger');
+                }
+
+                const betterMatchesList = document.getElementById('betterMatchesList');
+                betterMatchesList.innerHTML = '';
+
+                data.better_matches.forEach(match => {
+                    const matchDiv = document.createElement('div');
+                    matchDiv.classList.add('card', 'mb-2');
+                    matchDiv.innerHTML = `
+                        <div class="card-body">
+                            <h6 class="card-title">${match.name}</h6>
+                            <div class="progress mb-2">
+                                <div class="progress-bar" role="progressbar" style="width: ${match.match_percentage}%" aria-valuenow="${match.match_percentage}">
+                                    ${match.match_percentage}%
+                                </div>
+                            </div>
+                            <small class="text-muted">Matching Skills:</small>
+                            <div class="d-flex flex-wrap gap-1 mb-2">${createSkillBadges(match.matching_skills, 'bg-success')}</div>
+                            <small class="text-muted">Missing Skills:</small>
+                            <div class="d-flex flex-wrap gap-1 mb-2">${createSkillBadges(match.missing_skills, 'bg-danger')}</div>
+                            <button class="btn btn-sm btn-primary" onclick="selectAssignee('${match.user_id}', '${match.name}')">Select Assignee</button>
+                        </div>
+                    `;
+                    betterMatchesList.appendChild(matchDiv);
+                });
+            }
+        });
+    });
+
+    function updateSkills(containerId, skills, badgeClass) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        skills.forEach(skill => {
+            const span = document.createElement('span');
+            span.className = `badge ${badgeClass}`;
+            span.textContent = skill;
+            container.appendChild(span);
+        });
+    }
+
+    function createSkillBadges(skills, badgeClass) {
+        return skills.map(skill => `<span class="badge ${badgeClass}">${skill}</span>`).join('');
+    }
+});
+
+function selectAssignee(userId, userName) {
+    const assignedToSelect = document.getElementById('assigned_to');
+    assignedToSelect.value = userId;
+    alert(`Assigned ${userName} to the task.`);
+}
+</script>
+{% endblock %}

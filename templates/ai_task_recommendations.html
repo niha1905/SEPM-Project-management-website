@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block title %}AI Task Recommendations{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card {
+        border: none;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        margin-bottom: 1.5rem;
+    }
+    
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%);
+        color: white;
+        font-weight: 600;
+        border-bottom: none;
+    }
+    
+    .task-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+    
+    .task-info {
+        color: #666;
+        font-size: 0.9rem;
+    }
+    
+    .skill-badge {
+        background-color: rgba(111, 66, 193, 0.1);
+        color: var(--primary-color);
+        font-weight: 500;
+        border-radius: 20px;
+        padding: 0.35em 0.8em;
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+        display: inline-block;
+    }
+    
+    .match-percentage {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+    
+    .user-card {
+        border-left: 4px solid var(--primary-color);
+        background-color: #f8f9fa;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .user-card:hover {
+        background-color: rgba(111, 66, 193, 0.05);
+        transform: translateX(5px);
+    }
+    
+    .user-name {
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .progress {
+        height: 10px;
+        border-radius: 5px;
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .progress-bar {
+        background-color: var(--primary-color);
+    }
+    
+    .missing-skill {
+        background-color: rgba(220, 53, 69, 0.1);
+        color: #dc3545;
+    }
+    
+    .resume-link {
+        color: var(--primary-color);
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .resume-link:hover {
+        text-decoration: underline;
+    }
+    
+    .section-title {
+        color: var(--primary-color);
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        position: relative;
+        padding-bottom: 0.5rem;
+    }
+    
+    .section-title::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 50px;
+        height: 3px;
+        background: linear-gradient(135deg, var(--secondary-color) 0%, var(--primary-color) 100%);
+    }
+    
+    .no-tasks {
+        text-align: center;
+        padding: 3rem;
+        color: #666;
+    }
+    
+    .no-tasks i {
+        font-size: 3rem;
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="section-title">AI Task Recommendations Based on Resumes</h2>
+            </div>
+            <p class="text-muted">
+                This page analyzes user resumes and skills to recommend the best matches for each task.
+                The recommendations are based on skill matching between task requirements and user profiles.
+            </p>
+        </div>
+    </div>
+
+    {% if tasks %}
+        {% for task in tasks %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Task: {{ task.title }}</h5>
+                        <a href="{{ url_for('view_task', task_id=task.id) }}" class="btn btn-sm btn-light">
+                            <i class="fas fa-eye me-1"></i> View Task
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="task-info">
+                                <strong><i class="fas fa-project-diagram me-2"></i>Project:</strong> 
+                                {{ task.project.name }}
+                            </p>
+                            <p class="task-info">
+                                <strong><i class="fas fa-calendar me-2"></i>Due Date:</strong> 
+                                {% if task.due_date %}
+                                    {% if task.due_date is string %}
+                                        {{ task.due_date }}
+                                    {% else %}
+                                        {{ task.due_date.strftime('%Y-%m-%d') }}
+                                    {% endif %}
+                                {% else %}
+                                    No due date
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="task-info">
+                                <strong><i class="fas fa-flag me-2"></i>Priority:</strong> 
+                                <span class="badge bg-{{ task.priority_color if task.priority_color else 'secondary' }}">
+                                    {{ task.priority }}
+                                </span>
+                            </p>
+                            <p class="task-info">
+                                <strong><i class="fas fa-info-circle me-2"></i>Status:</strong> 
+                                <span class="badge bg-{{ task.status_color if task.status_color else 'secondary' }}">
+                                    {{ task.status }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6><i class="fas fa-tools me-2"></i>Required Skills:</h6>
+                        <div>
+                            {% if task.required_skills_list %}
+                                {% for skill in task.required_skills_list %}
+                                    <span class="skill-badge">{{ skill }}</span>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted">No specific skills required</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <h6 class="mb-3"><i class="fas fa-user-check me-2"></i>Best Matches:</h6>
+                    
+                    {% if task.best_matches %}
+                        <div class="row">
+                            {% for match in task.best_matches %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="user-card">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <h6 class="user-name mb-0">{{ match.name }}</h6>
+                                            <span class="match-percentage">{{ match.match_percentage }}%</span>
+                                        </div>
+                                        
+                                        <div class="progress">
+                                            <div class="progress-bar" role="progressbar" 
+                                                 style="width: {{ match.match_percentage }}%" 
+                                                 aria-valuenow="{{ match.match_percentage }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100"></div>
+                                        </div>
+                                        
+                                        <div class="mt-3">
+                                            <h6 class="small text-muted">Matching Skills:</h6>
+                                            <div>
+                                                {% for skill in match.matching_skills %}
+                                                    <span class="skill-badge">{{ skill }}</span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        
+                                        {% if match.missing_skills %}
+                                            <div class="mt-3">
+                                                <h6 class="small text-muted">Missing Skills:</h6>
+                                                <div>
+                                                    {% for skill in match.missing_skills %}
+                                                        <span class="skill-badge missing-skill">{{ skill }}</span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                        
+                                        {% if match.resume_path %}
+                                            <div class="mt-3">
+                                                <a href="{{ url_for('download_resume', user_id=match.user_id) }}" class="resume-link">
+                                                    <i class="fas fa-file-pdf me-1"></i> View Resume
+                                                </a>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            No matches found. Try adding more skills to the task requirements.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="card">
+            <div class="card-body no-tasks">
+                <i class="fas fa-tasks"></i>
+                <h4>No tasks found</h4>
+                <p>There are no tasks in the system or no tasks with required skills specified.</p>
+                <a href="{{ url_for('create_task') }}" class="btn btn-primary mt-3">
+                    <i class="fas fa-plus me-2"></i>Create a Task
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add any JavaScript functionality here
+    });
+</script>
+{% endblock %}

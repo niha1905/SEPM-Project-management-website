@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}User Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Main content -->
+<main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">Welcome, {{ session.get('name', 'User') }}!</h1>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        {% for stat in [
+            {"title": "Assigned Tasks", "value": stats.assigned_tasks if stats and stats.assigned_tasks is defined else assigned_tasks if assigned_tasks is defined else 0, "color": "primary"},
+            {"title": "Completed Tasks", "value": stats.completed_tasks if stats and stats.completed_tasks is defined else completed_tasks if completed_tasks is defined else 0, "color": "success"},
+            {"title": "My Projects", "value": stats.my_projects if stats and stats.my_projects is defined else my_projects if my_projects is defined else 0, "color": "info"},
+            {"title": "Upcoming Meetings", "value": stats.upcoming_meetings if stats and stats.upcoming_meetings is defined else upcoming_meetings if upcoming_meetings is defined else 0, "color": "warning"}
+        ] %}
+        <div class="col-md-3">
+            <div class="card bg-{{ stat.color }} text-white">
+                <div class="card-body">
+                    <h5 class="card-title">{{ stat.title }}</h5>
+                    <h2 class="card-text">{{ stat.value }}</h2>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Tasks Table -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">My Tasks</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Task Name</th>
+                            <th>Project</th>
+                            <th>Status</th>
+                            <th>Due Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for task in tasks %}
+                        <tr>
+                            <td>{{ task.title if task.title else task.name if task.name else 'Untitled Task' }}</td>
+                            <td>{{ task.project if task.project else task.project_name if task.project_name else 'N/A' }}</td>
+                            <td>
+                                <span class="badge bg-{{ task.status_color if task.status_color else 'secondary' }}">
+                                    {{ task.status if task.status else 'Not Set' }}
+                                </span>
+                            </td>
+                            <td>{{ task.due_date if task.due_date else 'Not Set' }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary task-edit-btn" 
+                                        data-task-id="{{ task.id }}" 
+                                        data-task-status="{{ task.status if task.status else 'Pending' }}"
+                                        aria-label="Edit Task">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Task Update Modal -->
+<div class="modal fade" id="updateTaskModal" tabindex="-1" aria-labelledby="updateTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updateTaskModalLabel">Update Task Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="updateTaskForm">
+                <div class="modal-body">
+                    <input type="hidden" id="taskId">
+                    <div class="mb-3">
+                        <label for="taskStatus" class="form-label">Status</label>
+                        <select id="taskStatus" class="form-select">
+                            <option value="To Do">To Do</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Review">Review</option>
+                            <option value="Completed">Completed</option>
+                            <option value="On Hold">On Hold</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Highlight active navigation link
+    const currentUrl = window.location.pathname;
+    document.querySelectorAll(".nav-link").forEach(link => {
+        if (link.getAttribute("href") === currentUrl) {
+            link.classList.add("active");
+        }
+    });
+
+    // Add event listeners to task edit buttons
+    document.querySelectorAll(".task-edit-btn").forEach(button => {
+        button.addEventListener("click", function() {
+            const taskId = this.getAttribute("data-task-id");
+            const currentStatus = this.getAttribute("data-task-status");
+            
+            document.getElementById('taskId').value = taskId;
+            
+            // Set the current status if it exists in the dropdown options
+            const statusSelect = document.getElementById('taskStatus');
+            const statusExists = Array.from(statusSelect.options).some(option => option.value === currentStatus);
+            
+            if (statusExists) {
+                statusSelect.value = currentStatus;
+            } else {
+                // Default to first option if status doesn't exist in dropdown
+                statusSelect.selectedIndex = 0;
+            }
+
+            var modal = new bootstrap.Modal(document.getElementById('updateTaskModal'));
+            modal.show();
+        });
+    });
+
+    // Handle task update submission
+    document.getElementById('updateTaskForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const taskId = document.getElementById('taskId').value;
+        const status = document.getElementById('taskStatus').value;
+
+        fetch(`/update_task_status/${taskId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: status })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Failed to update task status');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while updating the task status');
+        });
+    });
+});
+</script>
+
+{% endblock %}

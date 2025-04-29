@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}View Notification{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2>{{ notification.title }}</h2>
+                        <a href="{{ url_for('notifications') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Notifications
+                        </a>
+                    </div>
+                    
+                    <div class="notification-content">
+                        <p class="text-muted mb-3">
+                            Received on {{ notification.created_at }}
+                        </p>
+                        <div class="notification-message">
+                            {{ notification.message }}
+                        </div>
+                    </div>
+                    
+                    {% if notification.action_url %}
+                    <div class="mt-4">
+                        <a href="{{ notification.action_url }}" class="btn btn-primary">
+                            <i class="fas fa-external-link-alt me-2"></i>View Related Item
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mt-4">
+                        <button class="btn btn-danger" onclick="deleteNotification('{{ notification.id }}')">
+                            <i class="fas fa-trash me-2"></i>Delete Notification
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deleteNotification(notificationId) {
+    if (confirm('Are you sure you want to delete this notification?')) {
+        fetch(`{{ url_for("delete_notification", notification_id="") }}${notificationId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '{{ url_for("notifications") }}';
+            }
+        });
+    }
+}
+</script>
+{% endblock %} 

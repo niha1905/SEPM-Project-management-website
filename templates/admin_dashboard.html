@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block extra_css %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- ApexCharts -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<!-- Custom CSS -->
+<style>
+    .stat-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        margin-bottom: 15px;
+    }
+    .chart-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .activity-timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    .activity-timeline::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--primary-color);
+    }
+    .activity-item {
+        position: relative;
+        padding-bottom: 20px;
+    }
+    .activity-item::before {
+        content: '';
+        position: absolute;
+        left: -34px;
+        top: 0;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        border: 2px solid white;
+    }
+    .project-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+    }
+    .project-card:hover {
+        transform: translateY(-5px);
+    }
+    .progress {
+        height: 8px;
+        border-radius: 4px;
+    }
+    .status-badge {
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+    }
+    .status-active {
+        background: #e3fcef;
+        color: #00a854;
+    }
+    .status-pending {
+        background: #fff7e6;
+        color: #fa8c16;
+    }
+    .status-completed {
+        background: #e6f7ff;
+        color: #1890ff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <!-- Welcome Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h4 class="mb-0">Welcome back, {{ current_user.name }}!</h4>
+                    <p class="text-muted">Here's what's happening with your projects today.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        {% set stats = [
+            ('Total Projects', projects|length, 'fas fa-project-diagram', 'primary'),
+            ('Total Tasks', tasks|length, 'fas fa-tasks', 'success'),
+            ('Team Members', users|length, 'fas fa-users', 'info'),
+            ('Upcoming Meetings', meetings|length, 'fas fa-calendar-check', 'warning')
+        ] %}
+        {% for item in stats %}
+        <div class="col-md-3">
+            <div class="stat-card p-4">
+                <div class="stat-icon bg-{{ item[3] }} bg-opacity-10 text-{{ item[3] }}">
+                    <i class="{{ item[2] }}"></i>
+                </div>
+                <h3 class="mb-2">{{ item[1] }}</h3>
+                <p class="text-muted mb-0">{{ item[0] }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="chart-card">
+                <h5 class="mb-4">Project Status Distribution</h5>
+                <canvas id="projectStatusChart" style="height:300px;"></canvas>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="chart-card">
+                <h5 class="mb-4">Task Completion Rate</h5>
+                <canvas id="taskCompletionChart" style="height:300px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Projects and Activity Row -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Recent Projects</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Project Name</th>
+                                    <th>Status</th>
+                                    <th>Progress</th>
+                                    <th>Team Size</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for project in projects[:5] %}
+                                <tr>
+                                    <td>{{ project.name }}</td>
+                                    <td>
+                                        <span class="status-badge status-{{ project.status.lower() }}">
+                                            {{ project.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ project.progress|default(50) }}%"></div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if project.team_members %}
+                                            {% if project.team_members is string %}
+                                                {{ project.team_members.split(',')|length }}
+                                            {% elif project.team_members is sequence %}
+                                                {{ project.team_members|length }}
+                                            {% else %}
+                                                0
+                                            {% endif %}
+                                        {% else %}
+                                            0
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('project_details', project_id=project.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Recent Activity</h5>
+                </div>
+                <div class="card-body">
+                    <div class="activity-timeline">
+                        {% for activity in activities %}
+                        <div class="activity-item">
+                            <h6 class="mb-1">{{ activity.title }}</h6>
+                            <p class="text-muted small mb-0">{{ activity.description }}</p>
+                            <small class="text-muted">{{ activity.timestamp }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Project Status Chart
+const projectStatusCtx = document.getElementById('projectStatusChart').getContext('2d');
+new Chart(projectStatusCtx, {
+    type: 'bar',
+    data: {
+        labels: ['Not Started', 'In Progress', 'On Hold', 'Completed'],
+        datasets: [{
+            label: 'Number of Projects',
+            data: [5, 7, 2, 3],  // You can make this dynamic too
+            backgroundColor: [
+                'rgba(111, 66, 193, 0.2)',
+                'rgba(86, 61, 124, 0.2)',
+                'rgba(255, 193, 7, 0.2)',
+                'rgba(40, 167, 69, 0.2)'
+            ],
+            borderColor: [
+                'rgba(111, 66, 193, 1)',
+                'rgba(86, 61, 124, 1)',
+                'rgba(255, 193, 7, 1)',
+                'rgba(40, 167, 69, 1)'
+            ],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        }
+    }
+});
+
+// Task Completion Chart
+const taskCompletionCtx = document.getElementById('taskCompletionChart').getContext('2d');
+new Chart(taskCompletionCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Completed', 'In Progress', 'Pending'],
+        datasets: [{
+            data: [50, 30, 20],
+            backgroundColor: [
+                'rgba(40, 167, 69, 0.8)',
+                'rgba(111, 66, 193, 0.8)',
+                'rgba(255, 193, 7, 0.8)'
+            ],
+            hoverOffset: 10
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false
+    }
+});
+</script>
+{% endblock %}

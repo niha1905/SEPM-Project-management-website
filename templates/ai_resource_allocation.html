@@ -1,0 +1,485 @@
+{% extends "base.html" %}
+
+{% block title %}AI Resource Allocation{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Main content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2"><i class="fas fa-people-arrows me-2"></i>AI Resource Allocation</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <a href="{{ url_for('ai_recommendations') }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to AI Recommendations
+                    </a>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h5 class="card-title">About Resource Allocation</h5>
+                            <p class="card-text">
+                                Our AI-powered resource allocation system helps you optimize the distribution of resources across projects.
+                                It analyzes current resource utilization, identifies bottlenecks, and provides recommendations for optimal allocation.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Resource Allocation Options</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="resourceAllocationForm">
+                                <div class="mb-3">
+                                    <label for="optimization-goal" class="form-label">Optimization Goal</label>
+                                    <select class="form-select" id="optimization-goal">
+                                        <option value="balanced">Balanced (Default)</option>
+                                        <option value="time">Minimize Time</option>
+                                        <option value="cost">Minimize Cost</option>
+                                        <option value="quality">Maximize Quality</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="project-filter" class="form-label">Project Filter</label>
+                                    <select class="form-select" id="project-filter">
+                                        <option value="all">All Projects</option>
+                                        <option value="active">Active Projects Only</option>
+                                        <option value="critical">Critical Projects Only</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="resource-types" class="form-label">Resource Types</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="human" id="resource-human" checked>
+                                        <label class="form-check-label" for="resource-human">
+                                            Human Resources
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="financial" id="resource-financial" checked>
+                                        <label class="form-check-label" for="resource-financial">
+                                            Financial Resources
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="equipment" id="resource-equipment" checked>
+                                        <label class="form-check-label" for="resource-equipment">
+                                            Equipment & Tools
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="time-horizon" class="form-label">Time Horizon</label>
+                                    <select class="form-select" id="time-horizon">
+                                        <option value="short">Short-term (1-3 months)</option>
+                                        <option value="medium" selected>Medium-term (3-6 months)</option>
+                                        <option value="long">Long-term (6-12 months)</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary" id="btn-generate">
+                                        <i class="fas fa-robot me-2"></i>Generate Recommendations
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-8">
+                    <div class="card" id="results-card" style="display: none;">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Resource Allocation Recommendations</h5>
+                            <div>
+                                <button class="btn btn-sm btn-outline-primary me-2" id="btn-save">
+                                    <i class="fas fa-save me-1"></i>Save
+                                </button>
+                                <div class="btn-group me-2">
+                                    <button type="button" class="btn btn-sm btn-outline-success dropdown-toggle" data-bs-toggle="dropdown">
+                                        <i class="fas fa-file-export me-1"></i>Export
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" id="export-pdf"><i class="fas fa-file-pdf me-2"></i>PDF</a></li>
+                                        <li><a class="dropdown-item" href="#" id="export-excel"><i class="fas fa-file-excel me-2"></i>Excel</a></li>
+                                    </ul>
+                                </div>
+                                <button class="btn btn-sm btn-outline-secondary" id="btn-share">
+                                    <i class="fas fa-share-alt me-1"></i>Share
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body" id="results-content">
+                            <!-- Results will be loaded here -->
+                            <div class="text-center py-5" id="results-loading">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Generating resource allocation recommendations...</p>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">Generated on <span id="generation-date"></span></small>
+                                <button class="btn btn-sm btn-outline-primary" id="btn-refine">
+                                    <i class="fas fa-sync-alt me-1"></i>Refine Results
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Resource Allocation Tips</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6><i class="fas fa-lightbulb text-warning me-2"></i>Best Practices</h6>
+                                    <ul class="list-unstyled">
+                                        <li><i class="fas fa-check-circle text-success me-2"></i>Prioritize critical projects</li>
+                                        <li><i class="fas fa-check-circle text-success me-2"></i>Consider skill sets when assigning tasks</li>
+                                        <li><i class="fas fa-check-circle text-success me-2"></i>Maintain resource buffers for unexpected issues</li>
+                                        <li><i class="fas fa-check-circle text-success me-2"></i>Regularly review and adjust allocations</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6><i class="fas fa-exclamation-triangle text-danger me-2"></i>Common Pitfalls</h6>
+                                    <ul class="list-unstyled">
+                                        <li><i class="fas fa-times-circle text-danger me-2"></i>Overallocating resources</li>
+                                        <li><i class="fas fa-times-circle text-danger me-2"></i>Ignoring skill mismatches</li>
+                                        <li><i class="fas fa-times-circle text-danger me-2"></i>Failing to account for time off</li>
+                                        <li><i class="fas fa-times-circle text-danger me-2"></i>Not considering project dependencies</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const resourceAllocationForm = document.getElementById('resourceAllocationForm');
+    const resultsCard = document.getElementById('results-card');
+    const resultsContent = document.getElementById('results-content');
+    const resultsLoading = document.getElementById('results-loading');
+    const generationDate = document.getElementById('generation-date');
+    const btnSave = document.getElementById('btn-save');
+    const btnShare = document.getElementById('btn-share');
+    const btnRefine = document.getElementById('btn-refine');
+    
+    // Handle form submission
+    resourceAllocationForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const optimizationGoal = document.getElementById('optimization-goal').value;
+        const projectFilter = document.getElementById('project-filter').value;
+        const timeHorizon = document.getElementById('time-horizon').value;
+        
+        // Get selected resource types
+        const resourceTypes = [];
+        if (document.getElementById('resource-human').checked) resourceTypes.push('human');
+        if (document.getElementById('resource-financial').checked) resourceTypes.push('financial');
+        if (document.getElementById('resource-equipment').checked) resourceTypes.push('equipment');
+        
+        // Show loading state
+        resultsCard.style.display = 'block';
+        resultsContent.innerHTML = '';
+        resultsLoading.style.display = 'block';
+        
+        // Set current date
+        generationDate.textContent = new Date().toLocaleString();
+        
+        // Call API
+        fetch('/api/resource_allocation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                optimization_goal: optimizationGoal,
+                project_filter: projectFilter,
+                resource_types: resourceTypes,
+                time_horizon: timeHorizon,
+                use_gemini: true
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to generate resource allocation recommendations');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Hide loading
+            resultsLoading.style.display = 'none';
+            
+            if (data.success) {
+                // Format the recommendations
+                const result = data.data;
+                let html = `
+                    <div class="mb-4">
+                        <h5>Current Resource Utilization</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <p>${result.current_utilization.overview}</p>
+                                
+                                <h6>Project Utilization</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Project</th>
+                                                <th>Utilization</th>
+                                                <th>Issues</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                `;
+                
+                if (result.current_utilization.projects && result.current_utilization.projects.length > 0) {
+                    result.current_utilization.projects.forEach(project => {
+                        html += `
+                            <tr>
+                                <td>${project.project_id}</td>
+                                <td>
+                                    <div class="progress">
+                                        <div class="progress-bar" role="progressbar" style="width: ${project.utilization_percentage}%;" aria-valuenow="${project.utilization_percentage}" aria-valuemin="0" aria-valuemax="100">${project.utilization_percentage}%</div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <ul class="mb-0">
+                                        ${project.issues.map(issue => `<li>${issue}</li>`).join('')}
+                                    </ul>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    html += `<tr><td colspan="3" class="text-center">No project data available</td></tr>`;
+                }
+                
+                html += `
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>Recommendations</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <ul>
+                                    ${result.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>Efficiency Actions</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <ul>
+                                    ${result.efficiency_actions.map(action => `<li>${action}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>Resource Conflicts</h5>
+                        <div class="card">
+                            <div class="card-body">
+                `;
+                
+                if (result.resource_conflicts && result.resource_conflicts.length > 0) {
+                    html += `<div class="accordion" id="conflictsAccordion">`;
+                    result.resource_conflicts.forEach((conflict, index) => {
+                        html += `
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="conflict-heading-${index}">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#conflict-collapse-${index}" aria-expanded="false" aria-controls="conflict-collapse-${index}">
+                                        ${conflict.description}
+                                    </button>
+                                </h2>
+                                <div id="conflict-collapse-${index}" class="accordion-collapse collapse" aria-labelledby="conflict-heading-${index}" data-bs-parent="#conflictsAccordion">
+                                    <div class="accordion-body">
+                                        <strong>Resolution:</strong> ${conflict.resolution}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += `</div>`;
+                } else {
+                    html += `<p class="text-center">No resource conflicts identified</p>`;
+                }
+                
+                html += `
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                resultsContent.innerHTML = html;
+            } else {
+                resultsContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        Error generating recommendations: ${data.message || 'Unknown error'}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            resultsLoading.style.display = 'none';
+            resultsContent.innerHTML = `
+                <div class="alert alert-danger">
+                    Error generating recommendations. Please try again.
+                </div>
+            `;
+        });
+    });
+    
+    // Save Results
+    btnSave.addEventListener('click', function() {
+        fetch('/api/save_recommendations', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: 'Resource Allocation Recommendations',
+                content: resultsContent.innerHTML,
+                date: new Date().toISOString()
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to save recommendations');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                alert('Recommendations saved successfully!');
+            } else {
+                alert('Error saving recommendations: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error saving recommendations. Please try again.');
+        });
+    });
+    
+    // Share Results
+    btnShare.addEventListener('click', function() {
+        const recipients = prompt('Enter email addresses to share with (comma-separated):');
+        if (!recipients) {
+            return; // User cancelled
+        }
+        
+        fetch('/api/share_results', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: 'Resource Allocation Recommendations',
+                content: resultsContent.innerHTML,
+                recipients: recipients.split(',').map(email => email.trim())
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to share recommendations');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                alert('Recommendations shared successfully!');
+            } else {
+                alert('Error sharing recommendations: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error sharing recommendations. Please try again.');
+        });
+    });
+    
+    // Refine Results
+    btnRefine.addEventListener('click', function() {
+        const refinementPrompt = prompt('What aspects would you like to refine or improve?');
+        if (!refinementPrompt) {
+            return; // User cancelled
+        }
+        
+        // Show loading state
+        const currentContent = resultsContent.innerHTML;
+        resultsContent.innerHTML = '';
+        resultsLoading.style.display = 'block';
+        
+        fetch('/api/refine_results', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: 'Resource Allocation Recommendations',
+                content: currentContent,
+                refinement_prompt: refinementPrompt
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to refine results');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Hide loading
+            resultsLoading.style.display = 'none';
+            
+            if (data.success) {
+                // Update the results with refined content
+                resultsContent.innerHTML = data.refined_content;
+                // Update the generation date
+                generationDate.textContent = new Date().toLocaleString();
+            } else {
+                resultsContent.innerHTML = currentContent;
+                alert('Error refining results: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            resultsLoading.style.display = 'none';
+            resultsContent.innerHTML = currentContent;
+            alert('Error refining results. Please try again.');
+        });
+    });
+});
+</script>
+{% endblock %}

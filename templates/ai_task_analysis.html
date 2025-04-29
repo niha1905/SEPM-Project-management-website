@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+
+{% block title %}AI Task Analysis{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Main content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2"><i class="fas fa-chart-line me-2"></i>AI Task Analysis</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <a href="{{ url_for('ai_recommendations') }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to AI Recommendations
+                    </a>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h5 class="card-title">About Task Analysis</h5>
+                            <p class="card-text">
+                                Our AI-powered task analysis system helps you understand task requirements, estimate effort, 
+                                identify potential risks, and get improvement tips. Enter a task title and description below to get started.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-5">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Task Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="taskAnalysisForm">
+                                <div class="mb-3">
+                                    <label for="task-title" class="form-label">Task Title</label>
+                                    <input type="text" class="form-control" id="task-title" placeholder="Enter task title" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="task-description" class="form-label">Task Description</label>
+                                    <textarea class="form-control" id="task-description" rows="6" placeholder="Enter detailed task description" required></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="task-context" class="form-label">Additional Context (Optional)</label>
+                                    <textarea class="form-control" id="task-context" rows="3" placeholder="Enter any additional context that might help with analysis"></textarea>
+                                </div>
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary" id="btn-analyze">
+                                        <i class="fas fa-robot me-2"></i>Analyze Task
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-7">
+                    <div class="card" id="analysis-results-card" style="display: none;">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Analysis Results</h5>
+                            <div>
+                                <button class="btn btn-sm btn-outline-primary me-2" id="btn-save-analysis">
+                                    <i class="fas fa-save me-1"></i>Save
+                                </button>
+                                <div class="btn-group me-2">
+                                    <button type="button" class="btn btn-sm btn-outline-success dropdown-toggle" data-bs-toggle="dropdown">
+                                        <i class="fas fa-file-export me-1"></i>Export
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" id="export-pdf"><i class="fas fa-file-pdf me-2"></i>PDF</a></li>
+                                        <li><a class="dropdown-item" href="#" id="export-excel"><i class="fas fa-file-excel me-2"></i>Excel</a></li>
+                                    </ul>
+                                </div>
+                                <button class="btn btn-sm btn-outline-secondary" id="btn-share-analysis">
+                                    <i class="fas fa-share-alt me-1"></i>Share
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body" id="analysis-results">
+                            <!-- Results will be loaded here -->
+                            <div class="text-center py-5" id="analysis-loading">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Analyzing task...</p>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">Generated on <span id="analysis-date"></span></small>
+                                <button class="btn btn-sm btn-outline-primary" id="btn-refine-analysis">
+                                    <i class="fas fa-sync-alt me-1"></i>Refine Analysis
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4" id="tips-card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Tips for Better Analysis</h5>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    <i class="fas fa-lightbulb text-warning me-2"></i>
+                                    <strong>Be specific:</strong> Include clear objectives and deliverables in your task description.
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-lightbulb text-warning me-2"></i>
+                                    <strong>Add context:</strong> Mention related tasks or dependencies.
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-lightbulb text-warning me-2"></i>
+                                    <strong>Include constraints:</strong> Mention any time, budget, or resource constraints.
+                                </li>
+                                <li class="list-group-item">
+                                    <i class="fas fa-lightbulb text-warning me-2"></i>
+                                    <strong>Technical details:</strong> Include technical requirements or specifications.
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const taskAnalysisForm = document.getElementById('taskAnalysisForm');
+    const analysisResultsCard = document.getElementById('analysis-results-card');
+    const analysisResults = document.getElementById('analysis-results');
+    const analysisLoading = document.getElementById('analysis-loading');
+    const analysisDate = document.getElementById('analysis-date');
+    const btnSaveAnalysis = document.getElementById('btn-save-analysis');
+    const btnShareAnalysis = document.getElementById('btn-share-analysis');
+    const btnRefineAnalysis = document.getElementById('btn-refine-analysis');
+    
+    // Handle form submission
+    taskAnalysisForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const taskTitle = document.getElementById('task-title').value;
+        const taskDescription = document.getElementById('task-description').value;
+        const taskContext = document.getElementById('task-context').value;
+        
+        if (!taskTitle || !taskDescription) {
+            alert('Please enter both task title and description');
+            return;
+        }
+        
+        // Show loading state
+        analysisResultsCard.style.display = 'block';
+        analysisResults.innerHTML = '';
+        analysisLoading.style.display = 'block';
+        
+        // Set current date
+        analysisDate.textContent = new Date().toLocaleString();
+        
+        // Call API
+        fetch('/api/task_analysis', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                task_title: taskTitle,
+                task_description: taskDescription,
+                task_context: taskContext
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to analyze task');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Hide loading
+            analysisLoading.style.display = 'none';
+            
+            if (data.status === 'success') {
+                // Format the analysis
+                const analysis = data.analysis;
+                
+                // Convert markdown to HTML
+                let html = '<div class="analysis-content">';
+                
+                // Split by sections (##)
+                const sections = analysis.split(/^## /m);
+                
+                for (let i = 0; i < sections.length; i++) {
+                    if (i === 0 && !sections[i].trim()) continue; // Skip empty first section
+                    
+                    const section = sections[i].trim();
+                    if (!section) continue;
+                    
+                    // Get section title and content
+                    const lines = section.split('\n');
+                    const title = lines[0].trim();
+                    const content = lines.slice(1).join('\n').trim();
+                    
+                    html += `
+                        <div class="mb-4">
+                            <h5>${title}</h5>
+                            <div class="card">
+                                <div class="card-body">
+                                    ${content.replace(/\n- /g, '<br>• ').replace(/\n/g, '<br>')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                html += '</div>';
+                analysisResults.innerHTML = html;
+            } else {
+                analysisResults.innerHTML = `
+                    <div class="alert alert-danger">
+                        Error analyzing task: ${data.message || 'Unknown error'}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            analysisLoading.style.display = 'none';
+            analysisResults.innerHTML = `
+                <div class="alert alert-danger">
+                    Error analyzing task. Please try again.
+                </div>
+            `;
+        });
+    });
+    
+    // Save Analysis
+    btnSaveAnalysis.addEventListener('click', function() {
+        const taskTitle = document.getElementById('task-title').value;
+        const analysisContent = analysisResults.innerHTML;
+        
+        fetch('/api/save_analysis', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: `Task Analysis: ${taskTitle}`,
+                content: analysisContent,
+                date: new Date().toISOString()
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to save analysis');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                alert('Analysis saved successfully!');
+            } else {
+                alert('Error saving analysis: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error saving analysis. Please try again.');
+        });
+    });
+    
+    // Share Analysis
+    btnShareAnalysis.addEventListener('click', function() {
+        const taskTitle = document.getElementById('task-title').value;
+        const recipients = prompt('Enter email addresses to share with (comma-separated):');
+        if (!recipients) {
+            return; // User cancelled
+        }
+        
+        fetch('/api/share_results', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: `Task Analysis: ${taskTitle}`,
+                content: analysisResults.innerHTML,
+                recipients: recipients.split(',').map(email => email.trim())
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to share analysis');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                alert('Analysis shared successfully!');
+            } else {
+                alert('Error sharing analysis: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error sharing analysis. Please try again.');
+        });
+    });
+    
+    // Refine Analysis
+    btnRefineAnalysis.addEventListener('click', function() {
+        const refinementPrompt = prompt('What aspects would you like to refine or improve?');
+        if (!refinementPrompt) {
+            return; // User cancelled
+        }
+        
+        // Show loading state
+        const currentContent = analysisResults.innerHTML;
+        analysisResults.innerHTML = '';
+        analysisLoading.style.display = 'block';
+        
+        fetch('/api/refine_results', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: `Task Analysis: ${document.getElementById('task-title').value}`,
+                content: currentContent,
+                refinement_prompt: refinementPrompt
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to refine analysis');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Hide loading
+            analysisLoading.style.display = 'none';
+            
+            if (data.success) {
+                // Update the results with refined content
+                analysisResults.innerHTML = data.refined_content;
+                // Update the generation date
+                analysisDate.textContent = new Date().toLocaleString();
+            } else {
+                analysisResults.innerHTML = currentContent;
+                alert('Error refining analysis: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            analysisLoading.style.display = 'none';
+            analysisResults.innerHTML = currentContent;
+            alert('Error refining analysis. Please try again.');
+        });
+    });
+});
+</script>
+{% endblock %}

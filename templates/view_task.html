@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header pb-0 d-flex justify-content-between align-items-center">
+                    <h6>Task Details</h6>
+                    <div>
+                        <a href="{{ url_for('tasks') }}" class="btn btn-secondary btn-sm">Back to Tasks</a>
+                        {% if session.get('role') == 'admin' %}
+                        <a href="{{ url_for('edit_task', task_id=task.id) }}" class="btn btn-primary btn-sm">Edit Task</a>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h4>{{ task.title }}</h4>
+                            <p class="text-muted">{{ task.description }}</p>
+                            
+                            <div class="row mt-4">
+                                <div class="col-md-6">
+                                    <h6>Project</h6>
+                                    <p>{{ task.project.name }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Assigned To</h6>
+                                    <p>{{ task.assignee.name }}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-4">
+                                <div class="col-md-6">
+                                    <h6>Status</h6>
+                                    <span class="badge bg-{{ task.status_color }}">{{ task.status }}</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Priority</h6>
+                                    <span class="badge bg-{{ task.priority_color }}">{{ task.priority }}</span>
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-4">
+                                <div class="col-md-6">
+                                    <h6>Due Date</h6>
+                                    <p>
+                                        {% if task.due_date %}
+                                            {% if task.due_date is string %}
+                                                {{ task.due_date }}
+                                            {% else %}
+                                                {{ task.due_date.strftime('%Y-%m-%d') }}
+                                            {% endif %}
+                                        {% else %}
+                                            No due date
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Progress</h6>
+                                    <div class="progress">
+                                        <div class="progress-bar bg-success" role="progressbar" 
+                                             style="width: {{ task.progress }}%" 
+                                             aria-valuenow="{{ task.progress }}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                            {{ task.progress }}%
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {% if task.required_skills %}
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <h6>Required Skills</h6>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        {% for skill in task.required_skills.split(',') %}
+                                        <span class="badge bg-info">{{ skill.strip() }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if task.matching_skills %}
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <h6>Skill Match</h6>
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress me-3" style="width: 200px;">
+                                            <div class="progress-bar bg-success" role="progressbar" 
+                                                 style="width: {{ task.skill_match_percentage }}%" 
+                                                 aria-valuenow="{{ task.skill_match_percentage }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                                {{ task.skill_match_percentage }}%
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <small class="text-muted">Matching skills:</small>
+                                            {% for skill in task.matching_skills %}
+                                            <span class="badge bg-success me-1">{{ skill }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header pb-0">
+                                    <h6>Task Information</h6>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item">
+                                            <strong>Created:</strong><br>
+                                            {{ task.created_at }}
+                                        </li>
+                                        <li class="list-group-item">
+                                            <strong>Last Updated:</strong><br>
+                                            {{ task.updated_at }}
+                                        </li>
+                                        <li class="list-group-item">
+                                            <strong>Estimated Hours:</strong><br>
+                                            {{ task.estimated_hours }}
+                                        </li>
+                                        <li class="list-group-item">
+                                            <strong>Actual Hours:</strong><br>
+                                            {{ task.actual_hours }}
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

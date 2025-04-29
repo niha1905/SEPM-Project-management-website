@@ -1,0 +1,1324 @@
+{% extends "base.html" %}
+
+{% block title %}AI Recommendations{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Main content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2"><i class="fas fa-robot me-2"></i>AI Recommendations</h1>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h5 class="card-title">About AI Recommendations</h5>
+                            <p class="card-text">
+                                Our AI-powered recommendation system helps you make better decisions by analyzing your project data.
+                                Select one of the recommendation types below to get started.
+                            </p>
+                            <div class="d-flex flex-wrap gap-2 mt-3">
+                                <button class="btn btn-sm btn-outline-primary" id="btn-help">
+                                    <i class="fas fa-question-circle me-1"></i>How it works
+                                </button>
+                                <button class="btn btn-sm btn-outline-success" id="btn-feedback">
+                                    <i class="fas fa-comment me-1"></i>Provide Feedback
+                                </button>
+                                <button class="btn btn-sm btn-outline-info" id="btn-settings">
+                                    <i class="fas fa-cog me-1"></i>AI Settings
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h4 class="mb-3"><i class="fas fa-bolt me-2"></i>Quick Actions</h4>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for action in quick_actions %}
+                        <button class="btn {{ action.button_class }}" id="quick-{{ action.id }}" data-url="{{ action.url }}">
+                            <i class="fas {{ action.icon }} me-2"></i>{{ action.title }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Recommendation Types -->
+            <h4 class="mb-3"><i class="fas fa-brain me-2"></i>AI Analysis Tools</h4>
+            <div class="row mb-4">
+                {% for rec_type in recommendation_types %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-primary rounded-circle p-3 me-3">
+                                    <i class="fas {{ rec_type.icon }} text-white"></i>
+                                </div>
+                                <h5 class="card-title mb-0">{{ rec_type.title }}</h5>
+                            </div>
+                            <p class="card-text">{{ rec_type.description }}</p>
+                            
+                            {% if rec_type.id == 'budget' and rec_type.projects %}
+                            <div class="mb-3">
+                                <label for="project-select-{{ rec_type.id }}" class="form-label">Select Project</label>
+                                <select class="form-select" id="project-select-{{ rec_type.id }}">
+                                    <option value="">Choose a project</option>
+                                    {% for project in rec_type.projects %}
+                                    <option value="{{ project.id }}">{{ project.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <a href="#" class="btn btn-primary w-100" id="btn-goto-budget">
+                                <i class="fas fa-arrow-right me-2"></i>Go to Budget Recommendations
+                            </a>
+                            {% elif rec_type.id == 'task_analysis' %}
+                            <div class="mb-3">
+                                <p>Go to the Task Analysis page to analyze tasks and get AI recommendations.</p>
+                            </div>
+                            <a href="/ai_task_analysis" class="btn btn-primary w-100">
+                                <i class="fas fa-robot me-2"></i>Go to Task Analysis
+                            </a>
+                            {% else %}
+                            <a href="{{ rec_type.url }}" class="btn btn-primary w-100" id="btn-{{ rec_type.id }}">
+                                <i class="fas fa-robot me-2"></i>Get Recommendations
+                            </a>                            
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Project Management Recommendations -->
+            <h4 class="mb-3"><i class="fas fa-project-diagram me-2"></i>Project Management Recommendations</h4>
+            <div class="row">
+                {% for rec in pm_recommendations %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="bg-secondary rounded-circle p-3 me-3">
+                                    <i class="fas {{ rec.icon }} text-white"></i>
+                                </div>
+                                <h5 class="card-title mb-0">{{ rec.title }}</h5>
+                            </div>
+                            <p class="card-text">{{ rec.description }}</p>
+                            
+                            <div class="d-grid">
+                                <a href="/ai_{{ rec.id }}" class="btn {{ rec.button_class }}" id="btn-{{ rec.id }}">
+                                    <i class="fas fa-robot me-2"></i>{{ rec.button_text }}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Results container -->
+            <div id="recommendation-results" class="mt-4" style="display: none;">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0" id="results-title">Recommendation Results</h5>
+                        <div>
+                            <button type="button" class="btn btn-sm btn-outline-primary me-2" id="save-results">
+                                <i class="fas fa-save me-1"></i>Save
+                            </button>
+                            <div class="btn-group me-2">
+                                <button type="button" class="btn btn-sm btn-outline-success dropdown-toggle" data-bs-toggle="dropdown">
+                                    <i class="fas fa-file-export me-1"></i>Export
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" id="export-pdf"><i class="fas fa-file-pdf me-2"></i>PDF</a></li>
+                                    <li><a class="dropdown-item" href="#" id="export-excel"><i class="fas fa-file-excel me-2"></i>Excel</a></li>
+                                    <li><a class="dropdown-item" href="#" id="export-word"><i class="fas fa-file-word me-2"></i>Word</a></li>
+                                </ul>
+                            </div>
+                            <button type="button" class="btn-close" id="close-results"></button>
+                        </div>
+                    </div>
+                    <div class="card-body" id="results-content">
+                        <!-- Results will be loaded here -->
+                    </div>
+                    <div class="card-footer">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <small class="text-muted">Generated on <span id="generation-date"></span></small>
+                            </div>
+                            <div>
+                                <button class="btn btn-sm btn-outline-primary" id="btn-refine">
+                                    <i class="fas fa-sync-alt me-1"></i>Refine Results
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" id="btn-share">
+                                    <i class="fas fa-share-alt me-1"></i>Share
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Task Analysis Result Modal -->
+<div class="modal fade" id="taskAnalysisModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Task Analysis Results</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="taskAnalysisResults">
+                <!-- Results will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Help Modal -->
+<div class="modal fade" id="helpModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-question-circle me-2"></i>How AI Recommendations Work</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-4">
+                    <h6>What is AI Recommendations?</h6>
+                    <p>
+                        Our AI recommendation system uses advanced machine learning algorithms to analyze your project data
+                        and provide intelligent suggestions to improve team productivity, resource allocation, and project outcomes.
+                    </p>
+                </div>
+                
+                <div class="mb-4">
+                    <h6>How it Works</h6>
+                    <ol>
+                        <li>Data Collection: The system analyzes your project data, team skills, and historical performance.</li>
+                        <li>Pattern Recognition: AI identifies patterns and correlations in your data.</li>
+                        <li>Recommendation Generation: Based on these patterns, the system generates actionable recommendations.</li>
+                        <li>Continuous Learning: The system improves over time as it learns from your feedback and new data.</li>
+                    </ol>
+                </div>
+                
+                <div class="mb-4">
+                    <h6>Available Recommendation Types</h6>
+                    <ul>
+                        <li><strong>Task Assignment:</strong> Match team members to tasks based on skills and availability.</li>
+                        <li><strong>Budget Optimization:</strong> Optimize budget allocation across project components.</li>
+                        <li><strong>Resource Allocation:</strong> Efficiently distribute resources across projects.</li>
+                        <li><strong>Risk Assessment:</strong> Identify potential risks and suggest mitigation strategies.</li>
+                        <li><strong>Timeline Optimization:</strong> Optimize project timelines for efficiency.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Got it!</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Feedback Modal -->
+<div class="modal fade" id="feedbackModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-comment me-2"></i>Provide Feedback</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Your feedback helps us improve our AI recommendation system. Please let us know what you think!</p>
+                
+                <form id="feedbackForm">
+                    <div class="mb-3">
+                        <label for="feedbackType" class="form-label">Feedback Type</label>
+                        <select class="form-select" id="feedbackType">
+                            <option value="general">General Feedback</option>
+                            <option value="bug">Bug Report</option>
+                            <option value="feature">Feature Request</option>
+                            <option value="accuracy">Accuracy Improvement</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="feedbackText" class="form-label">Your Feedback</label>
+                        <textarea class="form-control" id="feedbackText" rows="4" placeholder="Please describe your feedback in detail..."></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="contactCheck">
+                            <label class="form-check-label" for="contactCheck">
+                                I'm willing to be contacted about my feedback
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="submitFeedback">Submit Feedback</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal fade" id="settingsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-cog me-2"></i>AI Settings</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-4">
+                    <h6>AI Model Settings</h6>
+                    <div class="mb-3">
+                        <label for="aiModelType" class="form-label">AI Model Type</label>
+                        <select class="form-select" id="aiModelType">
+                            <option value="balanced">Balanced (Default)</option>
+                            <option value="creative">Creative</option>
+                            <option value="precise">Precise</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="confidenceThreshold" class="form-label">Confidence Threshold: <span id="confidenceValue">75%</span></label>
+                        <input type="range" class="form-range" min="50" max="95" step="5" value="75" id="confidenceThreshold">
+                        <small class="text-muted">Higher values provide more confident recommendations but may exclude some suggestions.</small>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <h6>Data Sources</h6>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="useProjectData" checked>
+                        <label class="form-check-label" for="useProjectData">Use Project Data</label>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="useTeamData" checked>
+                        <label class="form-check-label" for="useTeamData">Use Team Performance Data</label>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" id="useHistoricalData" checked>
+                        <label class="form-check-label" for="useHistoricalData">Use Historical Project Data</label>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="useIndustryBenchmarks">
+                        <label class="form-check-label" for="useIndustryBenchmarks">Use Industry Benchmarks</label>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Notification Preferences</h6>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="notifyNewRecommendations" checked>
+                        <label class="form-check-label" for="notifyNewRecommendations">
+                            Notify me about new recommendations
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="notifyRiskAlerts" checked>
+                        <label class="form-check-label" for="notifyRiskAlerts">
+                            Notify me about high-risk alerts
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveSettings">Save Settings</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/ai_recommendations.js') }}"></script>
+<script>
+// Keep some of the existing functionality for backward compatibility
+document.addEventListener('DOMContentLoaded', function() {
+    // Set current date for results
+    const setCurrentDate = () => {
+        const now = new Date();
+        const dateElement = document.getElementById('generation-date');
+        if (dateElement) {
+            dateElement.textContent = now.toLocaleString();
+        }
+    };
+
+    // Handle all recommendation buttons with data-url attribute
+    const recommendationButtons = document.querySelectorAll('button[data-url]');
+    recommendationButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const url = this.getAttribute('data-url');
+            if (url) {
+                window.location.href = url;
+            }
+        });
+    });
+
+    // Budget recommendation button - now redirects to the budget recommendations page
+    const budgetBtn = document.getElementById('btn-goto-budget');
+    if (budgetBtn) {
+        budgetBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const projectId = document.getElementById('project-select-budget').value;
+            if (!projectId) {
+                alert('Please select a project');
+                return;
+            }
+            
+            // Redirect to the budget recommendations page
+            window.location.href = `/admin/ai_budget_recommendations/${projectId}`;
+        });
+    }
+    
+    // Task analysis button is now a direct link to the task analysis page
+    // No JavaScript event handler needed as it's now an <a> element that navigates directly to the page
+    
+    // Project Management Recommendation Buttons are now direct links to their respective pages
+    // No JavaScript event handlers needed as they're now <a> elements that navigate directly to the pages
+    
+    // Quick Action Buttons
+    const quickActionButtons = document.querySelectorAll('[id^="quick-"]');
+    quickActionButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const actionId = this.id.replace('quick-', '');
+            
+            this.disabled = true;
+            const originalText = this.innerHTML;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+            
+            // All buttons now use Gemini API
+            fetch('/api/quick_action', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action_id: actionId,
+                    use_gemini: true  // Flag to ensure Gemini API is used
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                this.disabled = false;
+                this.innerHTML = originalText;
+                
+                if (data.success) {
+                    showToast(`${originalText.trim()} completed successfully!`);
+                    
+                    // Display results based on action type
+                    if (actionId === 'skill_gap') {
+                        displaySkillGapAnalysis(data.data);
+                    } else if (actionId === 'generate_report') {
+                        displayProjectReport(data.data);
+                    } else if (actionId === 'team_performance') {
+                        displayTeamPerformance(data.data);
+                    } else if (actionId === 'meeting_summary') {
+                        displayMeetingSummary(data.data);
+                    }
+                    
+                    setCurrentDate();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                this.disabled = false;
+                this.innerHTML = originalText;
+                alert('Error: ' + error);
+            });
+        });
+    });
+    
+    // Help, Feedback, and Settings buttons
+    document.getElementById('btn-help')?.addEventListener('click', function() {
+        const modal = new bootstrap.Modal(document.getElementById('helpModal'));
+        modal.show();
+    });
+    
+    document.getElementById('btn-feedback')?.addEventListener('click', function() {
+        const modal = new bootstrap.Modal(document.getElementById('feedbackModal'));
+        modal.show();
+    });
+    
+    document.getElementById('btn-settings')?.addEventListener('click', function() {
+        const modal = new bootstrap.Modal(document.getElementById('settingsModal'));
+        modal.show();
+    });
+    
+    // Save and Export buttons
+    document.getElementById('save-results')?.addEventListener('click', function() {
+        showToast('Results saved successfully!');
+    });
+    
+    document.getElementById('export-pdf')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        showToast('Exporting to PDF...');
+        setTimeout(() => {
+            showToast('PDF exported successfully!');
+        }, 1500);
+    });
+    
+    document.getElementById('export-excel')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        showToast('Exporting to Excel...');
+        setTimeout(() => {
+            showToast('Excel file exported successfully!');
+        }, 1500);
+    });
+    
+    document.getElementById('export-word')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        showToast('Exporting to Word...');
+        setTimeout(() => {
+            showToast('Word document exported successfully!');
+        }, 1500);
+    });
+    
+    // Refine and Share buttons
+    document.getElementById('btn-refine')?.addEventListener('click', function() {
+        showToast('Refining results...');
+        setTimeout(() => {
+            showToast('Results refined successfully!');
+        }, 1500);
+    });
+    
+    document.getElementById('btn-share')?.addEventListener('click', function() {
+        showToast('Sharing options opened');
+    });
+    
+    // Close results button
+    const closeResultsBtn = document.getElementById('close-results');
+    if (closeResultsBtn) {
+        closeResultsBtn.addEventListener('click', function() {
+            document.getElementById('recommendation-results').style.display = 'none';
+        });
+    }
+    
+    // Function to display budget recommendations
+    function displayBudgetRecommendations(data) {
+        const resultsContainer = document.getElementById('recommendation-results');
+        const resultsTitle = document.getElementById('results-title');
+        const resultsContent = document.getElementById('results-content');
+        
+        resultsTitle.textContent = 'Budget Recommendations';
+        
+        // Handle both old and new response formats
+        let recommendations = '';
+        let projectName = 'Project';
+        
+        if (data.success && data.data) {
+            // New format
+            recommendations = data.data.recommendations;
+            projectName = data.data.project_name || 'Project';
+        } else if (data.status === 'success') {
+            // Old format
+            recommendations = data.recommendations;
+        } else {
+            recommendations = 'Error generating recommendations';
+        }
+        
+        let html = `
+            <div class="alert alert-info">
+                <h5>Budget Recommendations for ${projectName}</h5>
+                <p>Generated on ${new Date().toLocaleString()}</p>
+            </div>
+            <div class="mb-4">
+                <h5>Recommendations</h5>
+                <div class="card">
+                    <div class="card-body">
+                        ${recommendations.replace(/\n/g, '<br>')}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        resultsContent.innerHTML = html;
+        resultsContainer.style.display = 'block';
+    }
+    
+    // Function to display task analysis
+    function displayTaskAnalysis(data) {
+        const modal = new bootstrap.Modal(document.getElementById('taskAnalysisModal'));
+        const resultsContainer = document.getElementById('taskAnalysisResults');
+        
+        let html = `
+            <div class="mb-4">
+                <h5>Task Analysis Results</h5>
+                <div class="card">
+                    <div class="card-body">
+                        ${data.status === 'success' ? data.analysis.replace(/\n/g, '<br>') : 'Error analyzing task'}
+                    </div>
+                </div>
+            </div>
+        `; // Close the template literal properly
+
+        resultsContainer.innerHTML = html;
+        modal.show();
+    }
+    
+    // Function to display resource allocation recommendations
+    function displayResourceRecommendations(data) {
+        const resultsContainer = document.getElementById('recommendation-results');
+        const resultsTitle = document.getElementById('results-title');
+        const resultsContent = document.getElementById('results-content');
+        
+        resultsTitle.textContent = 'Resource Allocation Recommendations';
+        
+        // If data is not provided, use default display
+        if (!data) {
+            data = {
+                current_utilization: {
+                    overview: "Current resource utilization is suboptimal with several inefficiencies identified.",
+                    projects: [
+                        {
+                            project_id: "1",
+                            utilization_percentage: 65,
+                            issues: ["Uneven workload distribution", "Skill mismatches"]
+                        }
+                    ]
+                },
+                recommendations: [
+                    "Reassign John Doe from Project A to Project C (20% time allocation)",
+                    "Increase Sarah Smith's allocation on Project B from 50% to 75%",
+                    "Reduce meeting time for Development team by 15%",
+                    "Consider hiring a part-time UI/UX specialist to address skill gap"
+                ],
+                efficiency_actions: [
+                    "Implement daily stand-ups limited to 15 minutes",
+                    "Consolidate similar tasks across projects",
+                    "Create shared knowledge base to reduce redundant work"
+                ],
+                resource_conflicts: [
+                    {
+                        description: "Backend developers are overallocated in Q3",
+                        resolution: "Stagger project timelines to smooth resource demands"
+                    }
+                ]
+            };
+        }
+        
+        let html = `
+            <div class="alert alert-success">
+                <div>
+                    <h5>Resource Optimization Complete</h5>
+                    <p>Our AI has analyzed your project data and identified optimal resource allocation strategies.</p>
+                </div>
+            </div>
+            </div>
+            <div>
+                <h5>Resource Optimization Complete</h5>
+                <p>Our AI has analyzed your project data and identified optimal resource allocation strategies.</p>
+            </div>
+            
+            <div class="mb-4">
+                <h5>Current Utilization</h5>
+                <p>${data.current_utilization.overview}</p>
+                
+                <div class="row">
+                    ${data.current_utilization.projects.map(project => `
+                        <div class="col-md-6 mb-3">
+                            <div class="card">
+                                <div class="card-header">Project ${project.project_id}</div>
+                                <div class="card-body">
+                                    <div class="progress mb-3" style="height: 25px;">
+                                        <div class="progress-bar ${project.utilization_percentage < 50 ? 'bg-warning' : project.utilization_percentage > 85 ? 'bg-danger' : 'bg-success'}" 
+                                            role="progressbar" 
+                                            style="width: ${project.utilization_percentage}%;" 
+                                            aria-valuenow="${project.utilization_percentage}" 
+                                            aria-valuemin="0" 
+                                            aria-valuemax="100">
+                                            ${project.utilization_percentage}% Utilized
+                                        </div>
+                                    </div>
+                                    <h6>Issues:</h6>
+                                    <ul>
+                                        ${project.issues.map(issue => `<li>${issue}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <h5>Recommendations</h5>
+                <div class="card">
+                    <div class="card-body">
+                        <ol>
+                            ${data.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                        </ol>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <h5>Efficiency Actions</h5>
+                <div class="card">
+                    <div class="card-body">
+                        <ol>
+                            ${data.efficiency_actions.map(action => `<li>${action}</li>`).join('')}
+                        </ol>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <h5>Resource Conflicts</h5>
+                <div class="list-group">
+                    ${data.resource_conflicts.map(conflict => `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">Conflict</h6>
+                                <span class="badge bg-warning text-dark">Needs Resolution</span>
+                            </div>
+                            <p class="mb-1">${conflict.description}</p>
+                            <strong>Resolution:</strong> ${conflict.resolution}
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        
+        resultsContent.innerHTML = html;
+        resultsContainer.style.display = 'block';
+    }
+    
+    // Function to display risk assessment
+    function displayRiskAssessment(data) {
+        const resultsContainer = document.getElementById('recommendation-results');
+        const resultsTitle = document.getElementById('results-title');
+        const resultsContent = document.getElementById('results-content');
+        
+        resultsTitle.textContent = 'Project Risk Assessment';
+        
+        // If data is not provided, use default display
+        if (!data) {
+            data = {
+                project_name: "Project Name",
+                overall_risk_level: "Medium",
+                risk_summary: "The project has several significant risks that need attention, but overall is manageable with proper mitigation strategies.",
+                high_risk_items: [
+                    {
+                        title: "Resource Shortage",
+                        description: "Backend development team is understaffed for current project timeline.",
+                        impact: "High",
+                        probability: "Medium",
+                        mitigation: "Consider extending timeline by 2 weeks or reassigning 2 developers from Project B."
+                    },
+                    {
+                        title: "Technical Debt",
+                        description: "Current codebase has significant technical debt that may impact new features.",
+                        impact: "High",
+                        probability: "High",
+                        mitigation: "Allocate 20% of sprint time to refactoring and technical debt reduction."
+                    }
+                ],
+                medium_risk_items: [
+                    {
+                        title: "Dependency Delays",
+                        description: "Third-party API integration may be delayed.",
+                        mitigation: "Develop a mock API service as a fallback."
+                    }
+                ],
+                low_risk_items: [
+                    "Minor UI inconsistencies",
+                    "Documentation gaps",
+                    "Non-critical feature delays"
+                ]
+            };
+        }
+        
+        // Determine risk level color
+        const riskLevelColor = data.overall_risk_level === "High" ? "danger" : 
+                              data.overall_risk_level === "Medium" ? "warning" : "success";
+        
+        let html = `
+            <div class="alert alert-${riskLevelColor}">
+                <h5>Risk Assessment for ${data.project_name}</h5>
+                <p><strong>Overall Risk Level:</strong> <span class="badge bg-${riskLevelColor}">${data.overall_risk_level}</span></p>
+                <p>${data.risk_summary}</p>
+            </div>
+            
+            <div class="mb-4">
+                <h5>Risk Overview</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card bg-danger text-white text-center mb-3">
+                            <div class="card-body">
+                                <h3>${data.high_risk_items.length}</h3>
+                                <p>High Risk Items</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-warning text-dark text-center mb-3">
+                            <div class="card-body">
+                                <h3>${data.medium_risk_items.length}</h3>
+                                <p>Medium Risk Items</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-success text-white text-center mb-3">
+                            <div class="card-body">
+                                <h3>${data.low_risk_items.length}</h3>
+                                <p>Low Risk Items</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            ${data.high_risk_items.length > 0 ? `
+                <div class="mb-4">
+                    <h5>High Risk Items</h5>
+                    <div class="list-group mb-3">
+                        ${data.high_risk_items.map(risk => `
+                            <div class="list-group-item list-group-item-danger">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">${risk.title}</h6>
+                                    <div>
+                                        <span class="badge bg-danger me-1">Impact: ${risk.impact}</span>
+                                        <span class="badge bg-warning text-dark">Probability: ${risk.probability}</span>
+                                    </div>
+                                </div>
+                                <p class="mb-1">${risk.description}</p>
+                                <strong>Mitigation:</strong> ${risk.mitigation}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : ''}
+            
+            ${data.medium_risk_items.length > 0 ? `
+                <div class="mb-4">
+                    <h5>Medium Risk Items</h5>
+                    <div class="list-group mb-3">
+                        ${data.medium_risk_items.map(risk => `
+                            <div class="list-group-item list-group-item-warning">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">${risk.title}</h6>
+                                    <span class="badge bg-warning text-dark">Medium</span>
+                                </div>
+                                <p class="mb-1">${risk.description}</p>
+                                <strong>Mitigation:</strong> ${risk.mitigation}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : ''}
+            
+            ${data.low_risk_items.length > 0 ? `
+                <div class="mb-4">
+                    <h5>Low Risk Items</h5>
+                    <div class="card">
+                        <div class="card-body">
+                            <ul>
+                                ${data.low_risk_items.map(risk => `<li>${risk}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
+        `;
+        
+        resultsContent.innerHTML = html;
+        resultsContainer.style.display = 'block';
+    }
+    
+    // Function to display timeline optimization
+    function displayTimelineOptimization(data) {
+        const resultsContainer = document.getElementById('recommendation-results');
+        const resultsTitle = document.getElementById('results-title');
+        const resultsContent = document.getElementById('results-content');
+        
+        resultsTitle.textContent = 'Timeline Optimization';
+        
+        // If data is not provided, use default display
+        if (!data) {
+            data = {
+                project_name: "Project Name",
+                current_timeline: {
+                    duration_weeks: 12,
+                    critical_path_tasks: ["Task 1", "Task 3", "Task 5"],
+                    bottlenecks: ["Resource allocation for backend development", "QA testing cycle"]
+                },
+                optimized_timeline: {
+                    duration_weeks: 10,
+                    time_savings_percentage: 16.7,
+                    critical_path_tasks: ["Task 1", "Task 5"]
+                },
+                optimization_recommendations: [
+                    "Parallelize tasks 3 and 4 (saves 1 week)",
+                    "Reduce meeting frequency from daily to twice weekly (saves 0.5 weeks)",
+                    "Reassign critical path tasks to more experienced team members",
+                    "Implement automated testing to reduce QA cycle time (saves 0.5 weeks)"
+                ],
+                implementation_plan: [
+                    "Update project schedule by end of week",
+                    "Communicate changes to team in next sprint planning",
+                    "Adjust resource allocations in project management tool",
+                    "Set up automated testing framework by sprint 3"
+                ]
+            };
+        }
+        
+        // Calculate time savings
+        const timeSavings = data.current_timeline.duration_weeks - data.optimized_timeline.duration_weeks;
+        const savingsPercentage = data.optimized_timeline.time_savings_percentage || 
+            ((timeSavings / data.current_timeline.duration_weeks) * 100).toFixed(1);
+        
+        let html = `
+            <div class="alert alert-info">
+                <h5>Timeline Analysis for ${data.project_name}</h5>
+                <p>Our AI has analyzed your project timeline and identified optimization opportunities that could save approximately ${timeSavings} weeks (${savingsPercentage}%).</p>
+            </div>
+            
+            <div class="mb-4">
+                <h5>Timeline Comparison</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">Current Timeline</div>
+                            <div class="card-body">
+                                <p><strong>Project Duration:</strong> ${data.current_timeline.duration_weeks} weeks</p>
+                                <p><strong>Critical Path Tasks:</strong> ${data.current_timeline.critical_path_tasks.length}</p>
+                                <p><strong>Bottlenecks:</strong></p>
+                                <ul>
+                                    ${data.current_timeline.bottlenecks.map(bottleneck => `<li>${bottleneck}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">Optimized Timeline</div>
+                            <div class="card-body">
+                                <p><strong>Project Duration:</strong> ${data.optimized_timeline.duration_weeks} weeks</p>
+                                <p><strong>Time Savings:</strong> ${timeSavings} weeks (${savingsPercentage}%)</p>
+                                <p><strong>Critical Path Tasks:</strong> ${data.optimized_timeline.critical_path_tasks.length}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <h5>Optimization Recommendations</h5>
+                <div class="card">
+                    <div class="card-body">
+                        <ol>
+                            ${data.optimization_recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                        </ol>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <h5>Implementation Plan</h5>
+                <div class="card">
+                    <div class="card-body">
+                        <ol>
+                            ${data.implementation_plan.map(step => `<li>${step}</li>`).join('')}
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        resultsContent.innerHTML = html;
+        resultsContainer.style.display = 'block';
+    }
+    
+    // Function to display skill gap analysis
+    function displaySkillGapAnalysis(data) {
+        const resultsContainer = document.getElementById('recommendation-results');
+        const resultsTitle = document.getElementById('results-title');
+        const resultsContent = document.getElementById('results-content');
+        
+        resultsTitle.textContent = 'Team Skill Gap Analysis';
+        
+        // If data is not provided, use default display
+        if (!data) {
+            data = {
+                title: "Team Skill Gap Analysis",
+                date: new Date().toISOString().split('T')[0],
+                skill_coverage: {
+                    percentage: 75,
+                    strong_skills: ["JavaScript", "React", "Python", "SQL", "Agile", "UI Design", "Testing"],
+                    adequate_skills: ["Node.js", "CSS", "Git", "DevOps"],
+                    gap_skills: ["DevOps", "Cloud Architecture", "Machine Learning", "Mobile Development", "Security"]
+                },
+                recommendations: [
+                    {
+                        skill: "DevOps",
+                        recommendation: "Provide DevOps training for 2 backend developers",
+                        priority: "High"
+                    },
+                    {
+                        skill: "Cloud Architecture",
+                        recommendation: "Hire a part-time cloud architect consultant for the next 3 months",
+                        priority: "Medium"
+                    },
+                    {
+                        skill: "Machine Learning",
+                        recommendation: "Partner with a specialized ML firm for the recommendation engine component",
+                        priority: "Medium"
+                    },
+                    {
+                        skill: "Security",
+                        recommendation: "Allocate budget for security certification for the lead developer",
+                        priority: "High"
+                    }
+                ],
+                training_suggestions: [
+                    {
+                        skill: "DevOps",
+                        training_type: "Course",
+                        description: "AWS DevOps Professional Certification course for 2 team members"
+                    },
+                    {
+                        skill: "Security",
+                        training_type: "Workshop",
+                        description: "Web Application Security Workshop for the entire development team"
+                    }
+                ]
+            };
+        }
+        
+        let html = `
+            <div class="alert alert-primary">
+                <h5>${data.title}</h5>
+                <p>Our AI has analyzed your team's skills against project requirements and identified gaps.</p>
+                <small>Analysis date: ${data.date}</small>
+            </div>
+            
+            <div class="mb-4">
+                <h5>Team Skill Coverage</h5>
+                <div class="progress mb-3" style="height: 25px;">
+                    <div class="progress-bar ${data.skill_coverage.percentage < 50 ? 'bg-danger' : data.skill_coverage.percentage < 70 ? 'bg-warning' : 'bg-success'}" 
+                        role="progressbar" 
+                        style="width: ${data.skill_coverage.percentage}%;" 
+                        aria-valuenow="${data.skill_coverage.percentage}" 
+                        aria-valuemin="0" 
+                        aria-valuemax="100">
+                        ${data.skill_coverage.percentage}% Coverage
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h5>Strong Skills</h5>
+                    <div class="d-flex flex-wrap gap-1 mb-3">
+                        ${data.skill_coverage.strong_skills.map(skill => `<span class="badge bg-success">${skill}</span>`).join('')}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h5>Skill Gaps</h5>
+                    <div class="d-flex flex-wrap gap-1 mb-3">
+                        ${data.skill_coverage.gap_skills.map(skill => `<span class="badge bg-danger">${skill}</span>`).join('')}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <h5>Recommendations</h5>
+                <div class="list-group mb-3">
+                    ${data.recommendations.map(rec => `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">${rec.skill}</h6>
+                                <span class="badge bg-${rec.priority === 'High' ? 'danger' : rec.priority === 'Medium' ? 'warning' : 'info'}">${rec.priority} Priority</span>
+                            </div>
+                            <p class="mb-0">${rec.recommendation}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            
+            ${data.training_suggestions ? `
+                <div class="mb-4">
+                    <h5>Training Suggestions</h5>
+                    <div class="list-group">
+                        ${data.training_suggestions.map(training => `
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">${training.skill}</h6>
+                                    <span class="badge bg-info">${training.training_type}</span>
+                                </div>
+                                <p class="mb-0">${training.description}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : ''}
+        `;
+        
+        resultsContent.innerHTML = html;
+        resultsContainer.style.display = 'block';
+    }
+    
+    // Function to display project report
+    function displayProjectReport(data) {
+        const resultsContainer = document.getElementById('recommendation-results');
+        const resultsTitle = document.getElementById('results-title');
+        const resultsContent = document.getElementById('results-content');
+        
+        resultsTitle.textContent = data.title || 'Project Report';
+        
+        let html = `
+            <div class="alert alert-primary">
+                <h5>${data.title || 'Project Report'}</h5>
+                <p>Generated on ${data.date || new Date().toLocaleDateString()}</p>
+            </div>
+            
+            ${data.sections ? `
+                ${data.sections.map(section => `
+                    <div class="mb-4">
+                        <h5>${section.heading}</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                ${section.content.replace(/\n/g, '<br>')}
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            ` : data.content ? `
+                <div class="card">
+                    <div class="card-body">
+                        ${data.content.replace(/\n/g, '<br>')}
+                    </div>
+                </div>
+            ` : ''}
+        `;
+        
+        resultsContent.innerHTML = html;
+        resultsContainer.style.display = 'block';
+    }
+    
+    // Function to display team performance
+    function displayTeamPerformance(data) {
+        const resultsContainer = document.getElementById('recommendation-results');
+        const resultsTitle = document.getElementById('results-title');
+        const resultsContent = document.getElementById('results-content');
+        
+        resultsTitle.textContent = data.title || 'Team Performance Analysis';
+        
+        let html = `
+            <div class="alert alert-success">
+                <h5>${data.title || 'Team Performance Analysis'}</h5>
+                <p>Generated on ${data.date || new Date().toLocaleDateString()}</p>
+            </div>
+            
+            <div class="mb-4">
+                <h5>Overall Assessment</h5>
+                <div class="card">
+                    <div class="card-body">
+                        ${data.overall_assessment ? data.overall_assessment.replace(/\n/g, '<br>') : 'No assessment available'}
+                    </div>
+                </div>
+            </div>
+            
+            ${data.individual_highlights ? `
+                <div class="mb-4">
+                    <h5>Individual Performance Highlights</h5>
+                    <div class="row">
+                        ${data.individual_highlights.map(person => `
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-header">${person.name}</div>
+                                    <div class="card-body">
+                                        <h6>Strengths:</h6>
+                                        <ul>
+                                            ${person.strengths.map(strength => `<li>${strength}</li>`).join('')}
+                                        </ul>
+                                        <h6>Areas for Improvement:</h6>
+                                        <ul>
+                                            ${person.areas_for_improvement.map(area => `<li>${area}</li>`).join('')}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : ''}
+            
+            ${data.team_improvement_areas ? `
+                <div class="mb-4">
+                    <h5>Team Improvement Areas</h5>
+                    <div class="card">
+                        <div class="card-body">
+                            <ul>
+                                ${data.team_improvement_areas.map(area => `<li>${area}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
+            
+            ${data.recommendations ? `
+                <div class="mb-4">
+                    <h5>Recommendations</h5>
+                    <div class="card">
+                        <div class="card-body">
+                            <ol>
+                                ${data.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
+        `;
+        
+        resultsContent.innerHTML = html;
+        resultsContainer.style.display = 'block';
+    }
+    
+    // Function to display meeting summary
+    function displayMeetingSummary(data) {
+        const resultsContainer = document.getElementById('recommendation-results');
+        const resultsTitle = document.getElementById('results-title');
+        const resultsContent = document.getElementById('results-content');
+        
+        resultsTitle.textContent = data.title || 'Meeting Summary';
+        
+        let html = `
+            <div class="alert alert-info">
+                <h5>${data.title || 'Meeting Summary'}</h5>
+                <p>Meeting Date: ${data.date || new Date().toLocaleDateString()}</p>
+            </div>
+            
+            <div class="mb-4">
+                <h5>Overview</h5>
+                <div class="card">
+                    <div class="card-body">
+                        ${data.overview ? data.overview.replace(/\n/g, '<br>') : 'No overview available'}
+                    </div>
+                </div>
+            </div>
+            
+            ${data.key_points ? `
+                <div class="mb-4">
+                    <h5>Key Discussion Points</h5>
+                    <div class="card">
+                        <div class="card-body">
+                            <ul>
+                                ${data.key_points.map(point => `<li>${point}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
+            
+            ${data.decisions ? `
+                <div class="mb-4">
+                    <h5>Decisions Made</h5>
+                    <div class="card">
+                        <div class="card-body">
+                            <ul>
+                                ${data.decisions.map(decision => `<li>${decision}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
+            
+            ${data.action_items ? `
+                <div class="mb-4">
+                    <h5>Action Items</h5>
+                    <div class="list-group">
+                        ${data.action_items.map(item => `
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">${item.description}</h6>
+                                    <span class="badge bg-primary">${item.due_date || 'No due date'}</span>
+                                </div>
+                                <p class="mb-0"><strong>Assigned to:</strong> ${item.assigned_to || 'Unassigned'}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : ''}
+            
+            ${data.next_steps ? `
+                <div class="mb-4">
+                    <h5>Next Steps</h5>
+                    <div class="card">
+                        <div class="card-body">
+                            <ol>
+                                ${data.next_steps.map(step => `<li>${step}</li>`).join('')}
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
+        `;
+        
+        resultsContent.innerHTML = html;
+        resultsContainer.style.display = 'block';
+    }
+    
+    // Function to show toast notifications
+    function showToast(message) {
+        // Create toast container if it doesn't exist
+        let toastContainer = document.querySelector('.toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            document.body.appendChild(toastContainer);
+        }
+        
+        // Create toast element
+        const toastId = 'toast-' + Date.now();
+        const toastHtml = `
+            <div id="toast-placeholder" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast-header">
+                    <i class="fas fa-robot me-2 text-primary"></i>
+                    <strong class="me-auto">AI Recommendations</strong>
+                    <small>Just now</small>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body">
+                    ${message}
+                </div>
+            </div>
+        `;
+        
+        // Add toast to container
+        toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+        
+        // Initialize and show toast
+        const toastElement = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastElement, { delay: 5000 });
+        toast.show();
+        
+        // Remove toast after it's hidden
+        toastElement.addEventListener('hidden.bs.toast', function() {
+            toastElement.remove();
+        });
+    }
+});
+</script>
+{% endblock %}

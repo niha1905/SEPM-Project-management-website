@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        
+        <!-- Main content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Settings</h1>
+            </div>
+
+            <!-- Settings Tabs -->
+            <div class="card">
+                <div class="card-body">
+                    <ul class="nav nav-tabs" id="settingsTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general" type="button" role="tab">
+                                <i class="fas fa-cog me-2"></i>General
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="security-tab" data-bs-toggle="tab" data-bs-target="#security" type="button" role="tab">
+                                <i class="fas fa-shield-alt me-2"></i>Security
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="notifications-tab" data-bs-toggle="tab" data-bs-target="#notifications" type="button" role="tab">
+                                <i class="fas fa-bell me-2"></i>Notifications
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="integrations-tab" data-bs-toggle="tab" data-bs-target="#integrations" type="button" role="tab">
+                                <i class="fas fa-plug me-2"></i>Integrations
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content mt-4" id="settingsTabContent">
+                        <!-- General Settings -->
+                        <div class="tab-pane fade show active" id="general" role="tabpanel">
+                            <form id="generalSettingsForm">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="siteName" class="form-label">Site Name</label>
+                                        <input type="text" class="form-control" id="siteName" name="site_name" value="{{ settings.site_name }}" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="adminEmail" class="form-label">Admin Email</label>
+                                        <input type="email" class="form-control" id="adminEmail" name="admin_email" value="{{ settings.admin_email }}" required>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="timezone" class="form-label">Timezone</label>
+                                        <select class="form-select" id="timezone" name="timezone">
+                                            <option value="UTC">UTC</option>
+                                            <option value="EST">Eastern Time</option>
+                                            <option value="CST">Central Time</option>
+                                            <option value="MST">Mountain Time</option>
+                                            <option value="PST">Pacific Time</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="dateFormat" class="form-label">Date Format</label>
+                                        <select class="form-select" id="dateFormat" name="date_format">
+                                            <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                                            <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                                            <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="companyLogo" class="form-label">Company Logo</label>
+                                    <input type="file" class="form-control" id="companyLogo" name="company_logo" accept="image/*">
+                                    <div class="form-text">Recommended size: 200x50 pixels</div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save General Settings</button>
+                            </form>
+                        </div>
+
+                        <!-- Security Settings -->
+                        <div class="tab-pane fade" id="security" role="tabpanel">
+                            <form id="securitySettingsForm">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="sessionTimeout" class="form-label">Session Timeout (minutes)</label>
+                                        <input type="number" class="form-control" id="sessionTimeout" name="session_timeout" value="{{ settings.session_timeout }}" min="5" max="120" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="maxLoginAttempts" class="form-label">Max Login Attempts</label>
+                                        <input type="number" class="form-control" id="maxLoginAttempts" name="max_login_attempts" value="5" min="1" max="10" required>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="passwordExpiry" class="form-label">Password Expiry (days)</label>
+                                        <input type="number" class="form-control" id="passwordExpiry" name="password_expiry" value="90" min="30" max="365" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="minPasswordLength" class="form-label">Minimum Password Length</label>
+                                        <input type="number" class="form-control" id="minPasswordLength" name="min_password_length" value="8" min="6" max="20" required>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="require2FA" name="require_2fa">
+                                        <label class="form-check-label" for="require2FA">
+                                            Require Two-Factor Authentication
+                                        </label>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save Security Settings</button>
+                            </form>
+                        </div>
+
+                        <!-- Notification Settings -->
+                        <div class="tab-pane fade" id="notifications" role="tabpanel">
+                            <form id="notificationSettingsForm">
+                                <div class="mb-3">
+                                    <h5>Email Notifications</h5>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="emailTaskUpdates" name="email_task_updates" checked>
+                                        <label class="form-check-label" for="emailTaskUpdates">
+                                            Task Updates
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="emailProjectUpdates" name="email_project_updates" checked>
+                                        <label class="form-check-label" for="emailProjectUpdates">
+                                            Project Updates
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="emailMeetingReminders" name="email_meeting_reminders" checked>
+                                        <label class="form-check-label" for="emailMeetingReminders">
+                                            Meeting Reminders
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <h5>In-App Notifications</h5>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="inAppTaskUpdates" name="in_app_task_updates" checked>
+                                        <label class="form-check-label" for="inAppTaskUpdates">
+                                            Task Updates
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="inAppProjectUpdates" name="in_app_project_updates" checked>
+                                        <label class="form-check-label" for="inAppProjectUpdates">
+                                            Project Updates
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="inAppMeetingReminders" name="in_app_meeting_reminders" checked>
+                                        <label class="form-check-label" for="inAppMeetingReminders">
+                                            Meeting Reminders
+                                        </label>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save Notification Settings</button>
+                            </form>
+                        </div>
+
+                        <!-- Integration Settings -->
+                        <div class="tab-pane fade" id="integrations" role="tabpanel">
+                            <form id="integrationSettingsForm">
+                                <div class="mb-3">
+                                    <h5>Calendar Integration</h5>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="googleCalendar" name="google_calendar">
+                                        <label class="form-check-label" for="googleCalendar">
+                                            Google Calendar
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="outlookCalendar" name="outlook_calendar">
+                                        <label class="form-check-label" for="outlookCalendar">
+                                            Outlook Calendar
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <h5>File Storage</h5>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="googleDrive" name="google_drive">
+                                        <label class="form-check-label" for="googleDrive">
+                                            Google Drive
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="dropbox" name="dropbox">
+                                        <label class="form-check-label" for="dropbox">
+                                            Dropbox
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <h5>Communication</h5>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="slack" name="slack">
+                                        <label class="form-check-label" for="slack">
+                                            Slack
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="teams" name="teams">
+                                        <label class="form-check-label" for="teams">
+                                            Microsoft Teams
+                                        </label>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save Integration Settings</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}
+
+
+
+{% block extra_js %}
+<script>
+// Form submission handlers
+document.getElementById('generalSettingsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    
+    fetch('/settings/general', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', 'General settings updated successfully');
+        } else {
+            showAlert('danger', 'Failed to update general settings');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('danger', 'Failed to update general settings');
+    });
+});
+
+document.getElementById('securitySettingsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    
+    fetch('/settings/security', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', 'Security settings updated successfully');
+        } else {
+            showAlert('danger', 'Failed to update security settings');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('danger', 'Failed to update security settings');
+    });
+});
+
+document.getElementById('notificationSettingsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    
+    fetch('/settings/notifications', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', 'Notification settings updated successfully');
+        } else {
+            showAlert('danger', 'Failed to update notification settings');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('danger', 'Failed to update notification settings');
+    });
+});
+
+document.getElementById('integrationSettingsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    
+    fetch('/settings/integrations', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', 'Integration settings updated successfully');
+        } else {
+            showAlert('danger', 'Failed to update integration settings');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('danger', 'Failed to update integration settings');
+    });
+});
+
+// Helper function to show alerts
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+    alertDiv.style.zIndex = '9999';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+</script>
+{% endblock %} 

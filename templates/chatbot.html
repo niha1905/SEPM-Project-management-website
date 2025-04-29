@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+
+{% block title %}Project Assistant{% endblock %}
+
+{% block page_title %}Project Assistant{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Chat Interface -->
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">AI Project Assistant</h4>
+                </div>
+                <div class="card-body">
+                    <div id="chat-messages" class="chat-messages" style="height: 500px; overflow-y: auto;">
+                        <!-- Messages will be displayed here -->
+                    </div>
+                    <form id="chat-form" class="mt-3">
+                        <div class="input-group">
+                            <input type="text" id="user-input" class="form-control" placeholder="Ask about your projects, tasks, or get recommendations...">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Send
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Context Panel -->
+        <div class="col-md-4">
+            <!-- User Profile Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Your Profile</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-user-circle text-primary"></i>
+                            <strong>Role:</strong> {{ user.role }}
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-building text-success"></i>
+                            <strong>Department:</strong> {{ user.department }}
+                        </li>
+                        <li>
+                            <i class="fas fa-tools text-warning"></i>
+                            <strong>Skills:</strong>
+                            <div class="mt-1">
+                                {% for skill in user.skills %}
+                                <span class="badge bg-secondary me-1">{{ skill }}</span>
+                                {% endfor %}
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Task Statistics Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Task Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <h3 class="text-primary">{{ context.task_stats.total }}</h3>
+                            <small class="text-muted">Total Tasks</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <h3 class="text-success">{{ context.task_stats.completed }}</h3>
+                            <small class="text-muted">Completed</small>
+                        </div>
+                        <div class="col-6">
+                            <h3 class="text-warning">{{ context.task_stats.in_progress }}</h3>
+                            <small class="text-muted">In Progress</small>
+                        </div>
+                        <div class="col-6">
+                            <h3 class="text-danger">{{ context.task_stats.pending }}</h3>
+                            <small class="text-muted">Pending</small>
+                        </div>
+                    </div>
+                    <div class="progress mt-3">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: {{ context.task_stats.completion_rate }}%"
+                             aria-valuenow="{{ context.task_stats.completion_rate }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            {{ context.task_stats.completion_rate }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project Statistics Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">Project Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <h3 class="text-primary">{{ context.project_stats.total }}</h3>
+                            <small class="text-muted">Total Projects</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <h3 class="text-success">{{ context.project_stats.completed }}</h3>
+                            <small class="text-muted">Completed</small>
+                        </div>
+                        <div class="col-6">
+                            <h3 class="text-warning">{{ context.project_stats.active }}</h3>
+                            <small class="text-muted">Active</small>
+                        </div>
+                        <div class="col-6">
+                            <h3 class="text-info">{{ context.project_stats.completion_rate }}%</h3>
+                            <small class="text-muted">Completion Rate</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Projects Card -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">Active Projects</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for project in context.user_projects %}
+                        <div class="list-group-item">
+                            <h6 class="mb-1">{{ project.name }}</h6>
+                            <div class="progress mb-1" style="height: 5px;">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {{ project.progress }}%"
+                                     aria-valuenow="{{ project.progress }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                            <small class="text-muted">
+                                Status: <span class="badge bg-{{ 'success' if project.status == 'Completed' else 'warning' if project.status == 'In Progress' else 'secondary' }}">
+                                    {{ project.status }}
+                                </span>
+                            </small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.chat-messages {
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    background-color: #f8f9fa;
+}
+
+.message {
+    margin-bottom: 15px;
+    padding: 12px 15px;
+    border-radius: 10px;
+    max-width: 80%;
+    position: relative;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.user-message {
+    background-color: #007bff;
+    color: white;
+    margin-left: auto;
+    border-bottom-right-radius: 2px;
+}
+
+.assistant-message {
+    background-color: white;
+    color: #2d3748;
+    margin-right: auto;
+    border-bottom-left-radius: 2px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.progress {
+    height: 5px;
+    margin-top: 5px;
+    background-color: #e9ecef;
+}
+
+.progress-bar {
+    transition: width 0.3s ease-in-out;
+}
+
+.card {
+    border: none;
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.badge {
+    font-weight: 500;
+}
+
+#user-input {
+    border-radius: 20px 0 0 20px;
+    padding: 10px 20px;
+    border: 1px solid #ddd;
+}
+
+#user-input:focus {
+    box-shadow: none;
+    border-color: #007bff;
+}
+
+.btn-primary {
+    border-radius: 0 20px 20px 0;
+    padding: 10px 20px;
+}
+
+/* Custom scrollbar */
+.chat-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chatForm = document.getElementById('chat-form');
+    const userInput = document.getElementById('user-input');
+    const chatMessages = document.getElementById('chat-messages');
+
+    // Add initial greeting
+    addMessage("Hello! I'm your AI project assistant. I can help you with:\n\n" +
+               "• Project status and progress\n" +
+               "• Task management and recommendations\n" +
+               "• Team collaboration tips\n" +
+               "• Time management advice\n" +
+               "• Project best practices\n\n" +
+               "How can I assist you today?", 'assistant');
+
+    chatForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const query = userInput.value.trim();
+        if (!query) return;
+
+        // Add user message
+        addMessage(query, 'user');
+        userInput.value = '';
+
+        try {
+            const response = await fetch('/chatbot/query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query: query })
+            });
+
+            const data = await response.json();
+            
+            if (data.error) {
+                addMessage("Sorry, I encountered an error. Please try again.", 'assistant');
+            } else {
+                addMessage(data.answer, 'assistant');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            addMessage("Sorry, I encountered an error. Please try again.", 'assistant');
+        }
+    });
+
+    function addMessage(text, sender) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}-message`;
+        messageDiv.innerHTML = text.replace(/\n/g, '<br>');
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Add keyboard shortcut for sending messages
+    userInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            chatForm.dispatchEvent(new Event('submit'));
+        }
+    });
+});
+</script>
+{% endblock %}
+

@@ -1,0 +1,356 @@
+{% extends 'base.html' %}
+
+{% block title %}AI Budget Recommendations - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('budget_management') }}">Budget Management</a></li>
+                    <li class="breadcrumb-item active">AI Budget Recommendations</li>
+                </ol>
+            </nav>
+            <h1 class="h2 mb-4">
+                <i class="fas fa-robot text-primary me-2"></i>
+                AI Budget Recommendations
+            </h1>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-project-diagram me-2"></i>
+                        Project: {{ project.name }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Total Budget:</strong> ${{ project.budget|float|round(2)|format_number }}</p>
+                            <p><strong>Status:</strong> <span class="badge bg-{{ 'success' if project.status == 'Completed' else 'warning' if project.status == 'In Progress' else 'secondary' }}">{{ project.status }}</span></p>
+                            <p><strong>Team Size:</strong> {{ team_size }} members</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Start Date:</strong> {{ project.start_date }}</p>
+                            <p><strong>End Date:</strong> {{ project.end_date }}</p>
+                            <p><strong>Duration:</strong> {{ duration_months }} months</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-brain me-2"></i>
+                        Generate AI Budget Recommendations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="aiRecommendationsForm">
+                        <input type="hidden" name="project_id" id="project_id" value="{{ project.id }}">
+                        <input type="hidden" name="total_budget" id="total_budget" value="{{ project.budget|float }}">
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="project_type" class="form-label">Project Type</label>
+                                <select class="form-select" id="project_type" name="project_type">
+                                    <option value="Software Development">Software Development</option>
+                                    <option value="Web Application">Web Application</option>
+                                    <option value="Mobile Application">Mobile Application</option>
+                                    <option value="Data Analytics">Data Analytics</option>
+                                    <option value="Infrastructure">Infrastructure</option>
+                                    <option value="DevOps">DevOps</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="team_size" class="form-label">Team Size</label>
+                                <input type="number" class="form-control" id="team_size" name="team_size" value="{{ team_size }}" min="1" max="100">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="duration_months" class="form-label">Duration (months)</label>
+                                <input type="number" class="form-control" id="duration_months" name="duration_months" value="{{ duration_months }}" min="1" max="60">
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="complexity" class="form-label">Project Complexity</label>
+                                <select class="form-select" id="complexity" name="complexity">
+                                    <option value="Low">Low</option>
+                                    <option value="Medium" selected>Medium</option>
+                                    <option value="High">High</option>
+                                </select>
+                            </div>
+                            <div class="col-md-8">
+                                <label for="current_breakdown" class="form-label">Current Budget Breakdown (optional)</label>
+                                <textarea class="form-control" id="current_breakdown" name="current_breakdown" rows="3" placeholder="Enter any existing budget breakdown information...">{% if analysis and analysis|length > 0 %}{{ analysis[0].original_breakdown }}{% endif %}</textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="button" id="generateBtn" class="btn btn-primary">
+                                <i class="fas fa-magic me-2"></i>Generate AI Budget Recommendations
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loadingSection" class="row mb-4 d-none">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-body text-center py-5">
+                    <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <h4 class="text-primary">Generating AI Budget Recommendations...</h4>
+                    <p class="text-muted">This may take a few moments. Please wait.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="resultsSection" class="row mb-4 d-none">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>
+                        AI Budget Recommendations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        These recommendations are generated by AI based on the project parameters you provided.
+                    </div>
+                    
+                    <div id="recommendationContent">
+                        <!-- AI recommendations will be displayed here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history me-2"></i>
+                        Previous Budget Analyses
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if analysis and analysis|length > 0 %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Total Budget</th>
+                                        <th>Allocated</th>
+                                        <th>Remaining</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in analysis %}
+                                    <tr>
+                                        <td>{{ item.analysis_date }}</td>
+                                        <td>${{ item.total_budget|float|round(2)|format_number }}</td>
+                                        <td>${{ item.allocated_budget|float|round(2)|format_number }}</td>
+                                        <td>${{ item.remaining_budget|float|round(2)|format_number }}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary view-analysis" data-analysis-id="{{ item.id }}">
+                                                <i class="fas fa-eye"></i> View
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            No previous budget analyses found for this project.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for viewing analysis details -->
+<div class="modal fade" id="analysisModal" tabindex="-1" aria-labelledby="analysisModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="analysisModalLabel">Budget Analysis Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="analysisModalBody">
+                <!-- Analysis details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Generate AI recommendations
+        document.getElementById('generateBtn').addEventListener('click', function() {
+            // Show loading section
+            document.getElementById('loadingSection').classList.remove('d-none');
+            document.getElementById('resultsSection').classList.add('d-none');
+            
+            // Get form data
+            const formData = {
+                project_id: document.getElementById('project_id').value,
+                total_budget: parseFloat(document.getElementById('total_budget').value),
+                project_type: document.getElementById('project_type').value,
+                team_size: parseInt(document.getElementById('team_size').value),
+                duration_months: parseInt(document.getElementById('duration_months').value),
+                complexity: document.getElementById('complexity').value,
+                current_breakdown: document.getElementById('current_breakdown').value
+            };
+            
+            // Call API
+            fetch('/api/budget/ai_recommendations', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide loading section
+                document.getElementById('loadingSection').classList.add('d-none');
+                
+                if (data.success) {
+                    // Show results section
+                    document.getElementById('resultsSection').classList.remove('d-none');
+                    
+                    // Format the recommendations with sections
+                    let formattedContent = '';
+                    
+                    if (data.sections) {
+                        // Display each section with proper formatting
+                        for (const [section, content] of Object.entries(data.sections)) {
+                            formattedContent += `<div class="recommendation-section mb-4">
+                                <h4 class="text-primary">${section}</h4>
+                                <div class="p-3 bg-light rounded">${formatContent(content)}</div>
+                            </div>`;
+                        }
+                    } else {
+                        // If no sections, display the full recommendations
+                        formattedContent = `<div class="p-3 bg-light rounded">${formatContent(data.recommendations)}</div>`;
+                    }
+                    
+                    // Add a note if this was a fallback
+                    if (data.note) {
+                        formattedContent += `<div class="alert alert-warning mt-3">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            ${data.note}
+                        </div>`;
+                    }
+                    
+                    // Display the recommendations
+                    document.getElementById('recommendationContent').innerHTML = formattedContent;
+                    
+                    // Refresh the page after 2 seconds to show the new analysis in the history
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    // Show error
+                    alert('Error generating recommendations: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                document.getElementById('loadingSection').classList.add('d-none');
+                console.error('Error:', error);
+                alert('Error generating recommendations. Please try again.');
+            });
+        });
+        
+        // View analysis details
+        const analysisDataJson = JSON.parse('{{ analysis|tojson|safe }}');
+
+        document.querySelectorAll('.view-analysis').forEach(button => {
+            button.addEventListener('click', function() {
+                const analysisId = this.getAttribute('data-analysis-id');
+                const analysisData = analysisDataJson.find(a => a.id === analysisId);
+                
+                if (analysisData) {
+                    // Format the recommendations
+                    const formattedRecommendations = formatContent(analysisData.recommendations);
+                    
+                    // Display in modal
+                    document.getElementById('analysisModalBody').innerHTML = `
+                        <div class="mb-3">
+                            <h5>Analysis Date: ${analysisData.analysis_date}</h5>
+                            <p><strong>Total Budget:</strong> $${parseFloat(analysisData.total_budget).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                            <p><strong>Allocated Budget:</strong> $${parseFloat(analysisData.allocated_budget).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                            <p><strong>Remaining Budget:</strong> $${parseFloat(analysisData.remaining_budget).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                        </div>
+                        <div class="mb-3">
+                            <h5>Recommendations:</h5>
+                            <div class="p-3 bg-light rounded">${formattedRecommendations}</div>
+                        </div>
+                        <div class="mb-3">
+                            <h5>Risk Assessment:</h5>
+                            <div class="p-3 bg-light rounded">${analysisData.risk_assessment}</div>
+                        </div>
+                    `;
+                    
+                    // Show modal
+                    new bootstrap.Modal(document.getElementById('analysisModal')).show();
+                }
+            });
+        });
+        
+        // Helper function to format content with markdown-like syntax
+        function formatContent(content) {
+            if (!content) return '';
+            
+            // Replace line breaks with <br>
+            let formatted = content.replace(/\n/g, '<br>');
+            
+            // Format lists
+            formatted = formatted.replace(/- (.*?)(?=<br>|$)/g, '<li>$1</li>');
+            formatted = formatted.replace(/<li>(.*?)<\/li>(?:<br>)?<li>/g, '<li>$1</li><li>');
+            formatted = formatted.replace(/(<li>.*?<\/li>)+/g, '<ul>$&</ul>');
+            
+            // Format headings (## Heading)
+            formatted = formatted.replace(/## (.*?)(?=<br>|$)/g, '<h5>$1</h5>');
+            
+            // Format bold text
+            formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            return formatted;
+        }
+    </script>
+{% endblock %}

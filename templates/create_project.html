@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Create New Project</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('create_project') }}">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Project Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="client_requirements" class="form-label">Client Requirements</label>
+                            <textarea class="form-control" id="client_requirements" name="client_requirements" rows="3"></textarea>
+                        </div>
+                        <div>
+                        <label for="due_date">Due Date:</label>
+                        <input type="date" id="due_date" name="due_date" class="form-control">
+                    </div>
+
+                        
+                        <div class="mb-3">
+                            <label for="budget" class="form-label">Budget</label>
+                            <input type="number" class="form-control" id="budget" name="budget" step="0.01">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="team_members" class="form-label">Team Members (comma-separated emails)</label>
+                            <input type="text" class="form-control" id="team_members" name="team_members">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="Not Started">Not Started</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="On Hold">On Hold</option>
+                                <option value="Completed">Completed</option>
+                            </select>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Create Project</button>
+                            <a href="{{ url_for('projects') }}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

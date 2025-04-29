@@ -1,0 +1,450 @@
+{% extends "base.html" %}
+
+{% block title %}AI Timeline Optimization{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Main content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2"><i class="fas fa-calendar-check me-2"></i>AI Timeline Optimization</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <a href="{{ url_for('ai_recommendations') }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to AI Recommendations
+                    </a>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h5 class="card-title">About Timeline Optimization</h5>
+                            <p class="card-text">
+                                Our AI-powered timeline optimization system helps you identify bottlenecks, optimize task sequences,
+                                and reduce project duration. Select a project below to get started.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Timeline Optimization Options</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="timelineOptimizationForm">
+                                <div class="mb-3">
+                                    <label for="project-select" class="form-label">Select Project</label>
+                                    <select class="form-select" id="project-select" required>
+                                        <option value="">Choose a project</option>
+                                        {% for project in projects %}
+                                        <option value="{{ project.id }}">{{ project.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="optimization-goal" class="form-label">Optimization Goal</label>
+                                    <select class="form-select" id="optimization-goal">
+                                        <option value="time">Minimize Time (Default)</option>
+                                        <option value="resources">Minimize Resource Usage</option>
+                                        <option value="balanced">Balanced Approach</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="constraints" class="form-label">Constraints</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="fixed_resources" id="constraint-resources" checked>
+                                        <label class="form-check-label" for="constraint-resources">
+                                            Fixed Resources
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="fixed_deadline" id="constraint-deadline">
+                                        <label class="form-check-label" for="constraint-deadline">
+                                            Fixed Deadline
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="fixed_budget" id="constraint-budget" checked>
+                                        <label class="form-check-label" for="constraint-budget">
+                                            Fixed Budget
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="risk-tolerance" class="form-label">Risk Tolerance</label>
+                                    <select class="form-select" id="risk-tolerance">
+                                        <option value="low">Low (Conservative)</option>
+                                        <option value="medium" selected>Medium (Balanced)</option>
+                                        <option value="high">High (Aggressive)</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary" id="btn-optimize">
+                                        <i class="fas fa-robot me-2"></i>Optimize Timeline
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-8">
+                    <div class="card" id="results-card" style="display: none;">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Timeline Optimization Results</h5>
+                            <div>
+                                <button class="btn btn-sm btn-outline-primary me-2" id="btn-save">
+                                    <i class="fas fa-save me-1"></i>Save
+                                </button>
+                                <div class="btn-group me-2">
+                                    <button type="button" class="btn btn-sm btn-outline-success dropdown-toggle" data-bs-toggle="dropdown">
+                                        <i class="fas fa-file-export me-1"></i>Export
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" id="export-pdf"><i class="fas fa-file-pdf me-2"></i>PDF</a></li>
+                                        <li><a class="dropdown-item" href="#" id="export-excel"><i class="fas fa-file-excel me-2"></i>Excel</a></li>
+                                    </ul>
+                                </div>
+                                <button class="btn btn-sm btn-outline-secondary" id="btn-share">
+                                    <i class="fas fa-share-alt me-1"></i>Share
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body" id="results-content">
+                            <!-- Results will be loaded here -->
+                            <div class="text-center py-5" id="results-loading">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Optimizing timeline...</p>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">Generated on <span id="generation-date"></span></small>
+                                <button class="btn btn-sm btn-outline-primary" id="btn-refine">
+                                    <i class="fas fa-sync-alt me-1"></i>Refine Results
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Timeline Optimization Tips</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6><i class="fas fa-lightbulb text-warning me-2"></i>Best Practices</h6>
+                                    <ul class="list-unstyled">
+                                        <li><i class="fas fa-check-circle text-success me-2"></i>Identify critical path tasks</li>
+                                        <li><i class="fas fa-check-circle text-success me-2"></i>Parallelize non-dependent tasks</li>
+                                        <li><i class="fas fa-check-circle text-success me-2"></i>Add buffers for high-risk tasks</li>
+                                        <li><i class="fas fa-check-circle text-success me-2"></i>Regularly review and adjust timelines</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6><i class="fas fa-exclamation-triangle text-danger me-2"></i>Common Pitfalls</h6>
+                                    <ul class="list-unstyled">
+                                        <li><i class="fas fa-times-circle text-danger me-2"></i>Ignoring dependencies between tasks</li>
+                                        <li><i class="fas fa-times-circle text-danger me-2"></i>Underestimating task complexity</li>
+                                        <li><i class="fas fa-times-circle text-danger me-2"></i>Not accounting for resource constraints</li>
+                                        <li><i class="fas fa-times-circle text-danger me-2"></i>Setting unrealistic deadlines</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const timelineOptimizationForm = document.getElementById('timelineOptimizationForm');
+    const resultsCard = document.getElementById('results-card');
+    const resultsContent = document.getElementById('results-content');
+    const resultsLoading = document.getElementById('results-loading');
+    const generationDate = document.getElementById('generation-date');
+    const btnSave = document.getElementById('btn-save');
+    const btnShare = document.getElementById('btn-share');
+    const btnRefine = document.getElementById('btn-refine');
+    
+    // Handle form submission
+    timelineOptimizationForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const projectId = document.getElementById('project-select').value;
+        const optimizationGoal = document.getElementById('optimization-goal').value;
+        const riskTolerance = document.getElementById('risk-tolerance').value;
+        
+        // Get selected constraints
+        const constraints = [];
+        if (document.getElementById('constraint-resources').checked) constraints.push('fixed_resources');
+        if (document.getElementById('constraint-deadline').checked) constraints.push('fixed_deadline');
+        if (document.getElementById('constraint-budget').checked) constraints.push('fixed_budget');
+        
+        if (!projectId) {
+            alert('Please select a project');
+            return;
+        }
+        
+        // Show loading state
+        resultsCard.style.display = 'block';
+        resultsContent.innerHTML = '';
+        resultsLoading.style.display = 'block';
+        
+        // Set current date
+        generationDate.textContent = new Date().toLocaleString();
+        
+        // Call API
+        fetch('/api/timeline_optimization', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                project_id: projectId,
+                optimization_goal: optimizationGoal,
+                constraints: constraints,
+                risk_tolerance: riskTolerance
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to optimize timeline');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Hide loading
+            resultsLoading.style.display = 'none';
+            
+            if (data.success) {
+                // Format the timeline optimization
+                const result = data.data;
+                
+                // Calculate time savings
+                const currentDuration = result.current_timeline.duration_weeks;
+                const optimizedDuration = result.optimized_timeline.duration_weeks;
+                const timeSavings = currentDuration - optimizedDuration;
+                const savingsPercentage = Math.round((timeSavings / currentDuration) * 100);
+                
+                let html = `
+                    <div class="mb-4">
+                        <h5>Project: ${result.project_name}</h5>
+                        <div class="alert alert-success">
+                            <p><strong>Time Savings:</strong> ${timeSavings} weeks (${savingsPercentage}%)</p>
+                            <p>Current Duration: ${currentDuration} weeks → Optimized Duration: ${optimizedDuration} weeks</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>Timeline Comparison</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">Current Timeline</div>
+                                    <div class="card-body">
+                                        <p><strong>Project Duration:</strong> ${result.current_timeline.duration_weeks} weeks</p>
+                                        <p><strong>Critical Path Tasks:</strong> ${result.current_timeline.critical_path_tasks.length}</p>
+                                        <p><strong>Bottlenecks:</strong></p>
+                                        <ul>
+                                            ${result.current_timeline.bottlenecks.map(bottleneck => `<li>${bottleneck}</li>`).join('')}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">Optimized Timeline</div>
+                                    <div class="card-body">
+                                        <p><strong>Project Duration:</strong> ${result.optimized_timeline.duration_weeks} weeks</p>
+                                        <p><strong>Time Savings:</strong> ${timeSavings} weeks (${savingsPercentage}%)</p>
+                                        <p><strong>Critical Path Tasks:</strong> ${result.optimized_timeline.critical_path_tasks.length}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>Optimization Recommendations</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <ol>
+                                    ${result.optimization_recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>Implementation Plan</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <ol>
+                                    ${result.implementation_plan.map(step => `<li>${step}</li>`).join('')}
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                resultsContent.innerHTML = html;
+            } else {
+                resultsContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        Error optimizing timeline: ${data.message || 'Unknown error'}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            resultsLoading.style.display = 'none';
+            resultsContent.innerHTML = `
+                <div class="alert alert-danger">
+                    Error optimizing timeline. Please try again.
+                </div>
+            `;
+        });
+    });
+    
+    // Save Results
+    btnSave.addEventListener('click', function() {
+        fetch('/api/save_recommendations', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: 'Timeline Optimization Results',
+                content: resultsContent.innerHTML,
+                date: new Date().toISOString()
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to save results');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                alert('Results saved successfully!');
+            } else {
+                alert('Error saving results: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error saving results. Please try again.');
+        });
+    });
+    
+    // Share Results
+    btnShare.addEventListener('click', function() {
+        const recipients = prompt('Enter email addresses to share with (comma-separated):');
+        if (!recipients) {
+            return; // User cancelled
+        }
+        
+        fetch('/api/share_results', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: 'Timeline Optimization Results',
+                content: resultsContent.innerHTML,
+                recipients: recipients.split(',').map(email => email.trim())
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to share results');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                alert('Results shared successfully!');
+            } else {
+                alert('Error sharing results: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error sharing results. Please try again.');
+        });
+    });
+    
+    // Refine Results
+    btnRefine.addEventListener('click', function() {
+        const refinementPrompt = prompt('What aspects would you like to refine or improve?');
+        if (!refinementPrompt) {
+            return; // User cancelled
+        }
+        
+        // Show loading state
+        const currentContent = resultsContent.innerHTML;
+        resultsContent.innerHTML = '';
+        resultsLoading.style.display = 'block';
+        
+        fetch('/api/refine_results', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: 'Timeline Optimization Results',
+                content: currentContent,
+                refinement_prompt: refinementPrompt
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to refine results');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Hide loading
+            resultsLoading.style.display = 'none';
+            
+            if (data.success) {
+                // Update the results with refined content
+                resultsContent.innerHTML = data.refined_content;
+                // Update the generation date
+                generationDate.textContent = new Date().toLocaleString();
+            } else {
+                resultsContent.innerHTML = currentContent;
+                alert('Error refining results: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            resultsLoading.style.display = 'none';
+            resultsContent.innerHTML = currentContent;
+            alert('Error refining results. Please try again.');
+        });
+    });
+});
+</script>
+{% endblock %}

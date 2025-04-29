@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}My Meetings{% endblock %}
+
+{% block page_title %}My Meetings{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">My Meetings</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="meetingsTable">
+                <thead>
+                    <tr>
+                        <th>Meeting</th>
+                        <th>Project</th>
+                        <th>Date & Time</th>
+                        <th>Duration</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for meeting in meetings %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="meeting-icon me-3">
+                                    <i class="fas fa-calendar-alt text-primary"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">{{ meeting.title }}</div>
+                                    <small class="text-muted">{{ meeting.duration }}</small>
+                                    {% if meeting.description %}
+                                    <div><small class="text-muted">{{ meeting.description|truncate(50) }}</small></div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('project_details', project_id=meeting.project_id) }}" class="text-decoration-none">
+                                {{ meeting.project_name }}
+                            </a>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-clock me-2 text-muted"></i>
+                                {{ meeting.meeting_date }} {{ meeting.meeting_time }}
+                            </div>
+                        </td>
+                        <td>{{ meeting.duration }}</td>
+                        <td>{{ meeting.status }}</td>
+                        <td>
+                            <span class="badge bg-{{ meeting.status_color }}">{{ meeting.status }}</span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-info" onclick="viewMeetingDetails('{{ meeting.id }}')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-primary" onclick="joinMeeting('{{ meeting.id }}')">
+                                <i class="fas fa-video"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Meeting Details Modal -->
+<div class="modal fade" id="meetingDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Meeting Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="meetingDetailsContent"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $('#meetingsTable').DataTable({
+        order: [[2, 'asc']], // Sort by date by default
+        pageLength: 10,
+        language: {
+            search: "Search meetings:",
+            lengthMenu: "Show _MENU_ meetings per page",
+            info: "Showing _START_ to _END_ of _TOTAL_ meetings",
+            paginate: {
+                first: "First",
+                last: "Last",
+                next: "Next",
+                previous: "Previous"
+            }
+        }
+    });
+});
+
+function viewMeetingDetails(meetingId) {
+    fetch(`/meeting/${meetingId}`)
+        .then(response => response.json())
+        .then(data => {
+            const content = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Meeting Information</h6>
+                        <p><strong>Title:</strong> ${data.title || 'Untitled Meeting'}</p>
+                        <p><strong>Project:</strong> ${data.project_name || 'N/A'}</p>
+                        <p><strong>Description:</strong> ${data.description || 'No description provided'}</p>
+                        <p><strong>Status:</strong> 
+                            ${data.status ? 
+                                `<span class="badge status-${data.status.toLowerCase()}">${data.status}</span>` : 
+                                '<span class="badge status-unknown">Unknown</span>'}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Schedule</h6>
+                        <p><strong>Date:</strong> ${data.date || 'Not set'}</p>
+                        <p><strong>Time:</strong> ${data.time || 'Not set'}</p>
+                        <p><strong>Duration:</strong> ${data.duration ? data.duration + ' minutes' : 'Not specified'}</p>
+                        <p><strong>Participants:</strong> ${data.participants && Array.isArray(data.participants) ? 
+                            (data.participants.length > 0 ? data.participants.join(', ') : 'No participants') : 
+                            'Not specified'}</p>
+                    </div>
+                </div>
+            `;
+            $('#meetingDetailsContent').html(content);
+            $('#meetingDetailsModal').modal('show');
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error loading meeting details');
+        });
+}
+
+function joinMeeting(meetingId) {
+    fetch(`/meeting/${meetingId}/join`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.open(data.meeting_url, '_blank');
+        } else {
+            alert('Error joining meeting');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error joining meeting');
+    });
+}
+</script>
+
+<style>
+.status-scheduled {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.status-in-progress {
+    background: #e6f4ea;
+    color: #1e7e34;
+}
+
+.status-completed {
+    background: #f5f5f5;
+    color: #616161;
+}
+
+.status-cancelled {
+    background: #fbe9e7;
+    color: #d32f2f;
+}
+
+.status-unknown {
+    background: #f5f5f5;
+    color: #757575;
+}
+</style>
+{% endblock %} 

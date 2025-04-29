@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}My Projects{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">My Projects</h1>
+    </div>
+
+    <!-- Project Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <label for="statusFilter" class="form-label">Status</label>
+                    <select class="form-select" id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="Not Started">Not Started</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="On Hold">On Hold</option>
+                        <option value="Completed">Completed</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="priorityFilter" class="form-label">Priority</label>
+                    <select class="form-select" id="priorityFilter">
+                        <option value="">All Priorities</option>
+                        <option value="High">High</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Low">Low</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="searchInput" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="searchInput" placeholder="Search projects...">
+                </div>
+                <div class="col-md-3">
+                    <label for="sortBy" class="form-label">Sort By</label>
+                    <select class="form-select" id="sortBy">
+                        <option value="due_date">Due Date</option>
+                        <option value="progress">Progress</option>
+                        <option value="priority">Priority</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Projects Grid -->
+    <div class="row">
+        {% for project in projects %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">{{ project.name }}</h5>
+                    <div>
+                        <span class="badge bg-{{ project.status_color }} me-1">
+                            {{ project.status }}
+                        </span>
+                        <span class="badge bg-{{ project.priority_color }}">
+                            {{ project.priority }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ project.description }}</p>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small class="text-muted">Progress</small>
+                            <small class="text-muted">{{ "%.1f"|format(project.progress) }}%</small>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar" 
+                                 style="width: {{ project.progress }}%"
+                                 aria-valuenow="{{ project.progress }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <small class="text-muted d-block">Start Date</small>
+                            <div>{{ project.start_date }}</div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">Due Date</small>
+                            <div>{{ project.due_date }}</div>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <small class="text-muted d-block">Budget</small>
+                            <div>${{ "%.2f"|format(project.budget|float) }}</div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">My Tasks</small>
+                            <div>{{ project.completed_tasks }}/{{ project.total_tasks }}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- My Tasks Section -->
+                    <div class="mb-3">
+                        <small class="text-muted d-block">My Tasks</small>
+                        <div class="list-group list-group-flush">
+                            {% for task in project.tasks %}
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-bold">{{ task.title }}</div>
+                                        <small class="text-muted">{{ task.description }}</small>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-{{ task.status_color }} me-1">{{ task.status }}</span>
+                                        <span class="badge bg-{{ task.priority_color }}">{{ task.priority }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('project_details', project_id=project.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-eye me-1"></i>View Details
+                        </a>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('my_timeline') }}">
+                                        <i class="fas fa-calendar-alt me-2"></i>Timeline
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('my_tasks') }}">
+                                        <i class="fas fa-tasks me-2"></i>Tasks
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('team') }}">
+                                        <i class="fas fa-users me-2"></i>Team
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+    // Filter functionality
+    document.getElementById('statusFilter').addEventListener('change', filterProjects);
+    document.getElementById('priorityFilter').addEventListener('change', filterProjects);
+    document.getElementById('searchInput').addEventListener('input', filterProjects);
+    document.getElementById('sortBy').addEventListener('change', sortProjects);
+
+    function filterProjects() {
+        const statusFilter = document.getElementById('statusFilter').value.toLowerCase();
+        const priorityFilter = document.getElementById('priorityFilter').value.toLowerCase();
+        const searchText = document.getElementById('searchInput').value.toLowerCase();
+        
+        document.querySelectorAll('.col-md-6').forEach(projectCard => {
+            const status = projectCard.querySelector('.badge.bg-primary').textContent.toLowerCase();
+            const priority = projectCard.querySelector('.badge.bg-warning').textContent.toLowerCase();
+            const title = projectCard.querySelector('.card-title').textContent.toLowerCase();
+            const description = projectCard.querySelector('.card-text').textContent.toLowerCase();
+            
+            const matchesStatus = !statusFilter || status.includes(statusFilter);
+            const matchesPriority = !priorityFilter || priority.includes(priorityFilter);
+            const matchesSearch = !searchText || 
+                                title.includes(searchText) || 
+                                description.includes(searchText);
+            
+            projectCard.style.display = matchesStatus && matchesPriority && matchesSearch ? '' : 'none';
+        });
+    }
+
+    function sortProjects() {
+        const sortBy = document.getElementById('sortBy').value;
+        const projectsContainer = document.querySelector('.row');
+        const projects = Array.from(projectsContainer.children);
+        
+        projects.sort((a, b) => {
+            let valueA, valueB;
+            
+            switch(sortBy) {
+                case 'due_date':
+                    valueA = new Date(a.querySelector('.col-6:last-child div').textContent);
+                    valueB = new Date(b.querySelector('.col-6:last-child div').textContent);
+                    break;
+                case 'progress':
+                    valueA = parseFloat(a.querySelector('.progress-bar').style.width);
+                    valueB = parseFloat(b.querySelector('.progress-bar').style.width);
+                    break;
+                case 'priority':
+                    valueA = a.querySelector('.badge.bg-warning').textContent;
+                    valueB = b.querySelector('.badge.bg-warning').textContent;
+                    const priorityOrder = { 'High': 3, 'Medium': 2, 'Low': 1 };
+                    valueA = priorityOrder[valueA] || 0;
+                    valueB = priorityOrder[valueB] || 0;
+                    break;
+            }
+            
+            return valueB - valueA;
+        });
+        
+        projects.forEach(project => projectsContainer.appendChild(project));
+    }
+</script>
+{% endblock %}
+{% endblock %} 

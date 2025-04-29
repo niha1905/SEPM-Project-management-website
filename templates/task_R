@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Task Details{% endblock %}
+
+{% block content %}
+</head>
+<body>
+    <div class="container mt-5">
+        <h2 class="mb-4"><i class="fas fa-robot me-2"></i>Task AI Recommendation</h2>
+
+        <div class="card">
+            <div class="card-body">
+                <form id="taskForm">
+                    <div class="mb-3">
+                        <label for="taskTitle" class="form-label">Task Title</label>
+                        <input type="text" class="form-control" id="taskTitle" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="taskDescription" class="form-label">Task Description</label>
+                        <textarea class="form-control" id="taskDescription" name="description" rows="4" required></textarea>
+                    </div>
+                    <button type="button" class="btn btn-info me-2" id="analyzeTask">
+                        <i class="fas fa-robot me-2"></i>Get AI Recommendation
+                    </button>
+                    <a href="{{ url_for('tasks') }}" class="btn btn-secondary">Cancel</a>
+                </form>
+            </div>
+        </div>
+
+        <div id="recommendationResult" class="mt-4 d-none">
+            <h4>Recommended Team Member</h4>
+            <div class="card">
+                <div class="card-body">
+                    <p><strong>Name:</strong> <span id="recommendedName"></span></p>
+                    <p><strong>Match Percentage:</strong> <span id="matchPercentage"></span>%</p>
+                    <p><strong>Matching Skills:</strong> <span id="matchingSkills"></span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $("#analyzeTask").click(function() {
+                let title = $("#taskTitle").val().trim();
+                let description = $("#taskDescription").val().trim();
+
+                if (title === "" || description === "") {
+                    alert("Please enter both title and description.");
+                    return;
+                }
+
+                $.ajax({
+                    url: "{{ url_for('analyze_task') }}",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ title: title, description: description }),
+                    success: function(response) {
+                        if (response.success) {
+                            $("#recommendedName").text(response.recommended_user.name);
+                            $("#matchPercentage").text(response.match_percentage);
+                            $("#matchingSkills").text(response.matching_skills.join(", "));
+                            $("#recommendationResult").removeClass("d-none");
+                        } else {
+                            alert(response.message);
+                        }
+                    },
+                    error: function() {
+                        alert("Error retrieving AI recommendation.");
+                    }
+                });
+            });
+        });
+
+    $(document).ready(function() {
+        $("#analyzeTask").click(function() {
+            let title = $("#taskTitle").val().trim();
+            let description = $("#taskDescription").val().trim();
+
+            if (title === "" || description === "") {
+                alert("Please enter both title and description.");
+                return;
+            }
+
+            $.ajax({
+                url: "{{ url_for('analyze_task') }}",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ title: title, description: description }),
+                success: function(response) {
+                    if (response.success) {
+                        $("#recommendedName").text(response.recommended_user.name);
+                        $("#matchPercentage").text(response.match_percentage);
+                        $("#matchingSkills").text(response.matching_skills.join(", "));
+                        $("#recommendationResult").removeClass("d-none");
+                    } else {
+                        alert(response.message);
+                    }
+                },
+                error: function() {
+                    alert("Error retrieving AI recommendation.");
+                }
+            });
+        });
+    });
+</script>
+
+    </script>
+
+{% endblock %} 

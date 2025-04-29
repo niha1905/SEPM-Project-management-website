@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Profile{% endblock %}
+
+{% block page_title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Profile Information</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('profile') }}" enctype="multipart/form-data">
+                        <!-- Basic Information -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3">Basic Information</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="name" class="form-label">Full Name</label>
+                                    <input type="text" class="form-control" id="name" name="name" value="{{ user.name }}" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" value="{{ user.email }}" disabled>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Resume Upload -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3">Resume Upload</h5>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label for="resume" class="form-label">Upload Resume (PDF)</label>
+                                                <input type="file" class="form-control" id="resume" name="resume" accept=".pdf">
+                                                <div class="form-text">Upload your resume to automatically extract skills for better task allocation.</div>
+                                            </div>
+                                            {% if user.resume_path %}
+                                            <div class="mt-2">
+                                                <a href="{{ url_for('download_resume') }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-download"></i> Download Current Resume
+                                                </a>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                        </div>
+                    </div>
+                        </div>
+
+                        <!-- Skills Section -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3">Skills</h5>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            <div class="mb-3">
+                                                <label for="skills" class="form-label">Your Skills</label>
+                                                <input type="text" class="form-control" id="skills" name="skills" 
+                                                       value="{{ user.skills|join(', ') }}" 
+                                                       placeholder="Enter skills separated by commas">
+                                                <div class="form-text">Skills will be automatically extracted from your resume or you can manually add them.</div>
+                                            </div>
+                                            <div id="skills-tags" class="mt-2">
+                                                {% for skill in user.skills %}
+                                                <span class="badge bg-primary me-1 mb-1">
+                                                    {{ skill }}
+                                                    <i class="fas fa-times ms-1" onclick="removeSkill(this)"></i>
+                                                </span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                        </div>
+                    </div>
+                        </div>
+
+                        <!-- Department Information -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3">Department Information</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="department" class="form-label">Department</label>
+                                    <input type="text" class="form-control" id="department" name="department" value="{{ user.department }}">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="role" class="form-label">Role</label>
+                                    <input type="text" class="form-control" id="role" name="role" value="{{ user.role }}" disabled>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Password Change -->
+                        <div class="mb-4">
+                            <h5 class="text-primary mb-3">Change Password</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="current_password" class="form-label">Current Password</label>
+                                    <input type="password" class="form-control" id="current_password" name="current_password">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="new_password" class="form-label">New Password</label>
+                                    <input type="password" class="form-control" id="new_password" name="new_password">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="confirm_password" class="form-label">Confirm New Password</label>
+                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password">
+                        </div>
+                    </div>
+                        </div>
+
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.badge {
+    font-size: 0.9rem;
+    padding: 0.5em 0.8em;
+    cursor: pointer;
+}
+
+.badge i {
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.badge:hover i {
+    opacity: 1;
+}
+
+.card {
+    border: none;
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.form-control:focus {
+    box-shadow: none;
+    border-color: #0d6efd;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const skillsInput = document.getElementById('skills');
+    const skillsTags = document.getElementById('skills-tags');
+
+    // Handle skills input
+    skillsInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            addSkill(this.value);
+            this.value = '';
+        }
+    });
+
+    function addSkill(skill) {
+        skill = skill.trim();
+        if (skill && !document.querySelector(`.badge:contains('${skill}')`)) {
+            const badge = document.createElement('span');
+            badge.className = 'badge bg-primary me-1 mb-1';
+            badge.innerHTML = `${skill} <i class="fas fa-times ms-1" onclick="removeSkill(this)"></i>`;
+            skillsTags.appendChild(badge);
+            updateSkillsInput();
+        }
+    }
+
+    window.removeSkill = function(element) {
+        element.parentElement.remove();
+        updateSkillsInput();
+    }
+
+    function updateSkillsInput() {
+        const skills = Array.from(document.querySelectorAll('.badge')).map(badge => 
+            badge.textContent.trim().replace('×', '').trim()
+        );
+        skillsInput.value = skills.join(', ');
+    }
+
+    // Handle file upload preview
+    const resumeInput = document.getElementById('resume');
+    resumeInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            if (file.type !== 'application/pdf') {
+                alert('Please upload a PDF file');
+                this.value = '';
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                alert('File size should be less than 5MB');
+                this.value = '';
+                return;
+            }
+        }
+    });
+});
+</script>
+{% endblock %} 

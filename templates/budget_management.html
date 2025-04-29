@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block title %}Budget Management{% endblock %}
+
+{% block extra_css %}
+<style>
+    .budget-card {
+        border: none;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+    }
+    .budget-progress {
+        height: 20px;
+        margin-bottom: 0.5rem;
+    }
+    .budget-table th {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+    }
+    .budget-table td {
+        vertical-align: middle;
+    }
+    .ai-recommendations {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 4px;
+        margin-top: 1rem;
+    }
+    .budget-chart {
+        height: 300px;
+        margin: 1rem 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>Budget Management</h2>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addBudgetModal">
+                    <i class="fas fa-plus me-2"></i>Add Budget
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budget Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card budget-card">
+                <div class="card-body">
+                    <h5 class="card-title">Total Budget</h5>
+                    <h2 class="card-text">${{ "%.2f"|format(projects|sum(attribute='budget')|float) }}</h2>
+                    <div class="progress budget-progress">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: 100%">
+                            100%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card budget-card">
+                <div class="card-body">
+                    <h5 class="card-title">Allocated Budget</h5>
+                    <h2 class="card-text">${{ "%.2f"|format(projects|selectattr('budget')|sum(attribute='budget')|float) }}</h2>
+                    <div class="progress budget-progress">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             data-width="{{ (projects|selectattr('budget')|sum(attribute='budget')|float / projects|sum(attribute='budget')|float * 100)|round }}">
+                            {{ (projects|selectattr('budget')|sum(attribute='budget')|float / projects|sum(attribute='budget')|float * 100)|round }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card budget-card">
+                <div class="card-body">
+                    <h5 class="card-title">Average Budget</h5>
+                    <h2 class="card-text">${{ "%.2f"|format(projects|selectattr('budget')|sum(attribute='budget')|float / projects|length) }}</h2>
+                    <div class="progress budget-progress">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: 100%">
+                            100%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card budget-card">
+                <div class="card-body">
+                    <h5 class="card-title">Projects with Budget</h5>
+                    <h2 class="card-text">{{ projects|selectattr('budget')|list|length }}/{{ projects|length }}</h2>
+                    <div class="progress budget-progress">
+                        <div class="progress-bar bg-warning" role="progressbar" 
+                             data-width="{{ (projects|selectattr('budget')|list|length / projects|length * 100)|round }}">
+                            {{ (projects|selectattr('budget')|list|length / projects|length * 100)|round }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Projects Budget Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table budget-table">
+                            <thead>
+                                <tr>
+                                    <th>Project Name</th>
+                                    <th>Budget</th>
+                                    <th>Allocated</th>
+                                    <th>Status</th>
+                                    <th>Last Analysis</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for project in projects %}
+                                <tr>
+                                    <td>{{ project.name }}</td>
+                                    <td>${{ "%.2f"|format(project.budget|float) if project.budget else "0.00" }}</td>
+                                    <td>
+                                        <div class="progress budget-progress">
+                                            <div class="progress-bar bg-success" role="progressbar" 
+                                                 data-width="{{ (project.budget|float / projects|sum(attribute='budget')|float * 100)|round }}">
+                                                {{ (project.budget|float / projects|sum(attribute='budget')|float * 100)|round }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if project.budget else 'warning' }}">
+                                            {{ 'Budget Set' if project.budget else 'No Budget' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% set analysis = budget_analysis|selectattr('project_id', 'equalto', project.id)|first %}
+                                        {{ analysis.created_at if analysis else 'Never' }}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{{ url_for('budget_analysis', project_id=project.id) }}" class="btn btn-sm btn-outline-info">
+                                                <i class="fas fa-chart-bar me-1"></i> Analysis
+                                            </a>
+                                            <a href="{{ url_for('ai_budget_recommendations_page', project_id=project.id) }}" class="btn btn-sm btn-outline-success">
+                                                <i class="fas fa-robot me-1"></i> AI Recommendations
+                                            </a>
+                                            <button class="btn btn-sm btn-outline-primary" 
+                                                    onclick="editBudget('{{ project.id }}')">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Budget Modal -->
+<div class="modal fade" id="addBudgetModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Project Budget</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addBudgetForm" method="POST" action="{{ url_for('budget_management') }}">
+                    <div class="mb-3">
+                        <label class="form-label">Project</label>
+                        <select class="form-select" name="project_id" required>
+                            <option value="">Select Project</option>
+                            {% for project in projects %}
+                            <option value="{{ project.id }}">{{ project.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Total Budget</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" name="total_budget" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Budget Breakdown</label>
+                        <textarea class="form-control" name="budget_breakdown" rows="4" 
+                                  placeholder="Enter budget breakdown by category (e.g., Development: 40%, Design: 20%, Testing: 20%, Management: 20%)"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="addBudgetForm" class="btn btn-primary">Add Budget</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Budget Modal -->
+<div class="modal fade" id="editBudgetModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Project Budget</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editBudgetForm" method="POST" action="{{ url_for('budget_management') }}">
+                    <input type="hidden" name="project_id" id="editProjectId">
+                    <div class="mb-3">
+                        <label class="form-label">Total Budget</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" name="total_budget" id="editTotalBudget" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Budget Breakdown</label>
+                        <textarea class="form-control" name="budget_breakdown" id="editBudgetBreakdown" rows="4"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="editBudgetForm" class="btn btn-primary">Update Budget</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.progress-bar[data-width]').forEach(bar => {
+        const width = bar.getAttribute('data-width');
+        if (width) {
+            bar.style.width = `${width}%`;
+        }
+    });
+});
+function editBudget(projectId) {
+    // Get project data
+    const project = JSON.parse('{{ projects|tojson|safe }}').find(p => p.id === projectId);
+    if (project) {
+        document.getElementById('editProjectId').value = project.id;
+        document.getElementById('editTotalBudget').value = project.budget || '';
+        document.getElementById('editBudgetBreakdown').value = project.budget_breakdown || '';
+        
+        // Show modal
+        new bootstrap.Modal(document.getElementById('editBudgetModal')).show();
+    }
+}
+</script>
+{% endblock %} 

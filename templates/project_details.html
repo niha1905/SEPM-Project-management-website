@@ -1,0 +1,374 @@
+{% extends "base.html" %}
+
+{% block title %}Project Details - {{ project.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .project-header {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+    }
+    
+    .project-stats {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+    }
+    
+    .project-stats h3 {
+        color: var(--primary-color);
+    }
+    
+    .project-stats p {
+        color: #333;
+    }
+    
+    .task-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+        transition: transform 0.2s;
+    }
+    
+    .task-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .task-card h6 {
+        color: var(--primary-color);
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .task-card p {
+        color: #333;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        margin-bottom: 0.75rem;
+    }
+    
+    .task-card .text-muted {
+        color: #333 !important;
+        font-weight: 500;
+    }
+    
+    .task-card small {
+        color: #333;
+        font-weight: 500;
+    }
+    
+    .task-card .status-badge {
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+    
+    .task-card .due-date {
+        color: #333;
+        font-weight: 500;
+    }
+    
+    .team-member {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .team-member-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+    }
+    
+    .team-member h6 {
+        color: var(--primary-color);
+    }
+    
+    .team-member small {
+        color: #333;
+    }
+    
+    .progress {
+        height: 8px;
+        border-radius: 4px;
+    }
+    
+    .status-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    
+    .status-active {
+        background: rgba(111, 66, 193, 0.1);
+        color: var(--primary-color);
+    }
+    
+    .status-pending {
+        background: rgba(111, 66, 193, 0.1);
+        color: var(--primary-color);
+    }
+    
+    .status-completed {
+        background: rgba(111, 66, 193, 0.1);
+        color: var(--primary-color);
+    }
+    
+    .card-header h5 {
+        color: var(--primary-color);
+    }
+    
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--secondary-color);
+        border-color: var(--secondary-color);
+    }
+    
+    .btn-outline-primary {
+        color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+    
+    .btn-outline-primary:hover {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+    
+    .btn-outline-danger {
+        color: #dc3545;
+        border-color: #dc3545;
+    }
+    
+    .btn-outline-danger:hover {
+        background-color: #dc3545;
+        border-color: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h3 mb-0">{{ project.name }}</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('my_projects') }}">Projects</a></li>
+                    <li class="breadcrumb-item active">{{ project.name }}</li>
+                </ol>
+            </nav>
+            </div>
+        <div class="col-auto">
+            {% if user.role == 'admin' %}
+            <a href="{{ url_for('edit_project', project_id=project.id) }}" class="btn btn-primary">
+                <i class="fas fa-edit"></i> Edit Project
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Project Overview -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Project Overview</h5>
+                    <p class="card-text">{{ project.description }}</p>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Status</h6>
+                            <span class="badge bg-{{ project.status_color }}">{{ project.status }}</span>
+            </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Priority</h6>
+                            <span class="badge bg-{{ project.priority_color }}">{{ project.priority }}</span>
+            </div>
+        </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Start Date</h6>
+                            <p>{{ project.start_date }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted">Due Date</h6>
+                            <p>{{ project.due_date }}</p>
+            </div>
+        </div>
+                    
+                    <div class="progress mt-4">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: {{ project.progress }}%"
+                             aria-valuenow="{{ project.progress }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            {{ project.progress }}%
+                        </div>
+            </div>
+        </div>
+    </div>
+
+        <!-- Tasks Section -->
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Tasks</h5>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-filter="all">All</button>
+                        <button type="button" class="btn btn-sm btn-outline-success" data-filter="completed">Completed</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-filter="in-progress">In Progress</button>
+                        <button type="button" class="btn btn-sm btn-outline-warning" data-filter="pending">Pending</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Status</th>
+                                    <th>Priority</th>
+                                    <th>Due Date</th>
+                                    <th>Progress</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    {% for task in tasks %}
+                                <tr data-status="{{ task.status.lower() }}">
+                                    <td>
+                                        <a href="{{ url_for('view_task', task_id=task.id) }}" class="text-decoration-none">
+                                            {{ task.title }}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ task.status_color }}">
+                                        {{ task.status }}
+                                    </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ task.priority_color }}">
+                                            {{ task.priority }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if task.due_date %}
+                                            {% if task.due_date is string %}
+                                                {{ task.due_date }}
+                                            {% else %}
+                                                {{ task.due_date.strftime('%Y-%m-%d') }}
+                                            {% endif %}
+                                        {% else %}
+                                            No due date
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar bg-success" role="progressbar" 
+                                                 style="width: {{ task.progress }}%"
+                                                 aria-valuenow="{{ task.progress }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                                {{ task.progress }}%
+                                </div>
+                            </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Project Stats -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Project Statistics</h5>
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            Total Tasks
+                            <span class="badge bg-primary rounded-pill">{{ project.total_tasks }}</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            Completed Tasks
+                            <span class="badge bg-success rounded-pill">{{ project.completed_tasks }}</span>
+                            </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            In Progress Tasks
+                            <span class="badge bg-primary rounded-pill">{{ project.in_progress_tasks }}</span>
+                            </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            Pending Tasks
+                            <span class="badge bg-warning rounded-pill">{{ project.pending_tasks }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Team Members -->
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Team Members</h5>
+                    <div class="list-group list-group-flush">
+                        {% for member_id in project.team_members.split(',') %}
+                            {% if member_id.strip() %}
+                                <div class="list-group-item">
+                                    {{ member_id.strip() }}
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Task filtering functionality
+    const filterButtons = document.querySelectorAll('[data-filter]');
+    const taskRows = document.querySelectorAll('tbody tr');
+
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const filter = this.getAttribute('data-filter');
+            
+            // Update active button
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Filter tasks
+            taskRows.forEach(row => {
+                if (filter === 'all' || row.getAttribute('data-status').includes(filter)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}
+{% endblock %} 

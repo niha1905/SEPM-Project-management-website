@@ -1,0 +1,472 @@
+{% extends "base.html" %}
+
+{% block title %}AI Risk Assessment{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Main content -->
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2"><i class="fas fa-exclamation-triangle me-2"></i>AI Risk Assessment</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <a href="{{ url_for('ai_recommendations') }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-1"></i>Back to AI Recommendations
+                    </a>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h5 class="card-title">About Risk Assessment</h5>
+                            <p class="card-text">
+                                Our AI-powered risk assessment system helps you identify potential risks in your projects,
+                                assess their impact and probability, and develop mitigation strategies. Select a project below to get started.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Risk Assessment Options</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="riskAssessmentForm">
+                                <div class="mb-3">
+                                    <label for="project-select" class="form-label">Select Project</label>
+                                    <select class="form-select" id="project-select" required>
+                                        <option value="">Choose a project</option>
+                                        {% for project in projects %}
+                                        <option value="{{ project.id }}">{{ project.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="risk-categories" class="form-label">Risk Categories</label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="technical" id="risk-technical" checked>
+                                        <label class="form-check-label" for="risk-technical">
+                                            Technical Risks
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="schedule" id="risk-schedule" checked>
+                                        <label class="form-check-label" for="risk-schedule">
+                                            Schedule Risks
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="resource" id="risk-resource" checked>
+                                        <label class="form-check-label" for="risk-resource">
+                                            Resource Risks
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="budget" id="risk-budget" checked>
+                                        <label class="form-check-label" for="risk-budget">
+                                            Budget Risks
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" value="external" id="risk-external" checked>
+                                        <label class="form-check-label" for="risk-external">
+                                            External Risks
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="assessment-depth" class="form-label">Assessment Depth</label>
+                                    <select class="form-select" id="assessment-depth">
+                                        <option value="basic">Basic</option>
+                                        <option value="standard" selected>Standard</option>
+                                        <option value="detailed">Detailed</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary" id="btn-assess">
+                                        <i class="fas fa-robot me-2"></i>Assess Risks
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-8">
+                    <div class="card" id="results-card" style="display: none;">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Risk Assessment Results</h5>
+                            <div>
+                                <button class="btn btn-sm btn-outline-primary me-2" id="btn-save">
+                                    <i class="fas fa-save me-1"></i>Save
+                                </button>
+                                <div class="btn-group me-2">
+                                    <button type="button" class="btn btn-sm btn-outline-success dropdown-toggle" data-bs-toggle="dropdown">
+                                        <i class="fas fa-file-export me-1"></i>Export
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" id="export-pdf"><i class="fas fa-file-pdf me-2"></i>PDF</a></li>
+                                        <li><a class="dropdown-item" href="#" id="export-excel"><i class="fas fa-file-excel me-2"></i>Excel</a></li>
+                                    </ul>
+                                </div>
+                                <button class="btn btn-sm btn-outline-secondary" id="btn-share">
+                                    <i class="fas fa-share-alt me-1"></i>Share
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body" id="results-content">
+                            <!-- Results will be loaded here -->
+                            <div class="text-center py-5" id="results-loading">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2">Assessing risks...</p>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">Generated on <span id="generation-date"></span></small>
+                                <button class="btn btn-sm btn-outline-primary" id="btn-refine">
+                                    <i class="fas fa-sync-alt me-1"></i>Refine Results
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="mb-0">Risk Assessment Tips</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6><i class="fas fa-lightbulb text-warning me-2"></i>Best Practices</h6>
+                                    <ul class="list-unstyled">
+                                        <li><i class="fas fa-check-circle text-success me-2"></i>Identify risks early in the project</li>
+                                        <li><i class="fas fa-check-circle text-success me-2"></i>Prioritize risks by impact and probability</li>
+                                        <li><i class="fas fa-check-circle text-success me-2"></i>Develop mitigation strategies for high-priority risks</li>
+                                        <li><i class="fas fa-check-circle text-success me-2"></i>Regularly review and update risk assessments</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6><i class="fas fa-exclamation-triangle text-danger me-2"></i>Common Pitfalls</h6>
+                                    <ul class="list-unstyled">
+                                        <li><i class="fas fa-times-circle text-danger me-2"></i>Overlooking low-probability, high-impact risks</li>
+                                        <li><i class="fas fa-times-circle text-danger me-2"></i>Failing to involve all stakeholders</li>
+                                        <li><i class="fas fa-times-circle text-danger me-2"></i>Not updating risk assessments as the project evolves</li>
+                                        <li><i class="fas fa-times-circle text-danger me-2"></i>Ignoring external factors that could affect the project</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const riskAssessmentForm = document.getElementById('riskAssessmentForm');
+    const resultsCard = document.getElementById('results-card');
+    const resultsContent = document.getElementById('results-content');
+    const resultsLoading = document.getElementById('results-loading');
+    const generationDate = document.getElementById('generation-date');
+    const btnSave = document.getElementById('btn-save');
+    const btnShare = document.getElementById('btn-share');
+    const btnRefine = document.getElementById('btn-refine');
+    
+    // Handle form submission
+    riskAssessmentForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const projectId = document.getElementById('project-select').value;
+        const assessmentDepth = document.getElementById('assessment-depth').value;
+        
+        // Get selected risk categories
+        const riskCategories = [];
+        if (document.getElementById('risk-technical').checked) riskCategories.push('technical');
+        if (document.getElementById('risk-schedule').checked) riskCategories.push('schedule');
+        if (document.getElementById('risk-resource').checked) riskCategories.push('resource');
+        if (document.getElementById('risk-budget').checked) riskCategories.push('budget');
+        if (document.getElementById('risk-external').checked) riskCategories.push('external');
+        
+        if (!projectId) {
+            alert('Please select a project');
+            return;
+        }
+        
+        // Show loading state
+        resultsCard.style.display = 'block';
+        resultsContent.innerHTML = '';
+        resultsLoading.style.display = 'block';
+        
+        // Set current date
+        generationDate.textContent = new Date().toLocaleString();
+        
+        // Call API
+        fetch('/api/risk_assessment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                project_id: projectId,
+                risk_categories: riskCategories,
+                assessment_depth: assessmentDepth
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to generate risk assessment');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Hide loading
+            resultsLoading.style.display = 'none';
+            
+            if (data.success) {
+                // Format the risk assessment
+                const result = data.data;
+                let html = `
+                    <div class="mb-4">
+                        <h5>Project: ${result.project_name}</h5>
+                        <div class="alert alert-info">
+                            <p><strong>Risk Score:</strong> ${result.risk_score}/10</p>
+                            <p>${result.summary}</p>
+                        </div>
+                    </div>
+                `;
+                
+                // High Risk Items
+                if (result.high_risk_items && result.high_risk_items.length > 0) {
+                    html += `
+                        <div class="mb-4">
+                            <h5>High Risk Items</h5>
+                            <div class="list-group mb-3">
+                                ${result.high_risk_items.map(risk => `
+                                    <div class="list-group-item list-group-item-danger">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0">${risk.title}</h6>
+                                            <div>
+                                                <span class="badge bg-danger me-1">Impact: ${risk.impact}</span>
+                                                <span class="badge bg-warning text-dark">Probability: ${risk.probability}</span>
+                                            </div>
+                                        </div>
+                                        <p class="mb-1">${risk.description}</p>
+                                        <strong>Mitigation:</strong> ${risk.mitigation}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Medium Risk Items
+                if (result.medium_risk_items && result.medium_risk_items.length > 0) {
+                    html += `
+                        <div class="mb-4">
+                            <h5>Medium Risk Items</h5>
+                            <div class="list-group mb-3">
+                                ${result.medium_risk_items.map(risk => `
+                                    <div class="list-group-item list-group-item-warning">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h6 class="mb-0">${risk.title}</h6>
+                                            <span class="badge bg-warning text-dark">Medium</span>
+                                        </div>
+                                        <p class="mb-1">${risk.description}</p>
+                                        <strong>Mitigation:</strong> ${risk.mitigation}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Low Risk Items
+                if (result.low_risk_items && result.low_risk_items.length > 0) {
+                    html += `
+                        <div class="mb-4">
+                            <h5>Low Risk Items</h5>
+                            <div class="card">
+                                <div class="card-body">
+                                    <ul>
+                                        ${result.low_risk_items.map(risk => `<li>${risk}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Recommendations
+                if (result.recommendations && result.recommendations.length > 0) {
+                    html += `
+                        <div class="mb-4">
+                            <h5>Recommendations</h5>
+                            <div class="card">
+                                <div class="card-body">
+                                    <ol>
+                                        ${result.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                resultsContent.innerHTML = html;
+            } else {
+                resultsContent.innerHTML = `
+                    <div class="alert alert-danger">
+                        Error generating risk assessment: ${data.message || 'Unknown error'}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            resultsLoading.style.display = 'none';
+            resultsContent.innerHTML = `
+                <div class="alert alert-danger">
+                    Error generating risk assessment. Please try again.
+                </div>
+            `;
+        });
+    });
+    
+    // Save Results
+    btnSave.addEventListener('click', function() {
+        fetch('/api/save_recommendations', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: 'Risk Assessment Results',
+                content: resultsContent.innerHTML,
+                date: new Date().toISOString()
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to save results');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'success') {
+                alert('Results saved successfully!');
+            } else {
+                alert('Error saving results: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error saving results. Please try again.');
+        });
+    });
+    
+    // Share Results
+    btnShare.addEventListener('click', function() {
+        const recipients = prompt('Enter email addresses to share with (comma-separated):');
+        if (!recipients) {
+            return; // User cancelled
+        }
+        
+        fetch('/api/share_results', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: 'Risk Assessment Results',
+                content: resultsContent.innerHTML,
+                recipients: recipients.split(',').map(email => email.trim())
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to share results');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                alert('Results shared successfully!');
+            } else {
+                alert('Error sharing results: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error sharing results. Please try again.');
+        });
+    });
+    
+    // Refine Results
+    btnRefine.addEventListener('click', function() {
+        const refinementPrompt = prompt('What aspects would you like to refine or improve?');
+        if (!refinementPrompt) {
+            return; // User cancelled
+        }
+        
+        // Show loading state
+        const currentContent = resultsContent.innerHTML;
+        resultsContent.innerHTML = '';
+        resultsLoading.style.display = 'block';
+        
+        fetch('/api/refine_results', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                title: 'Risk Assessment Results',
+                content: currentContent,
+                refinement_prompt: refinementPrompt
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to refine results');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Hide loading
+            resultsLoading.style.display = 'none';
+            
+            if (data.success) {
+                // Update the results with refined content
+                resultsContent.innerHTML = data.refined_content;
+                // Update the generation date
+                generationDate.textContent = new Date().toLocaleString();
+            } else {
+                resultsContent.innerHTML = currentContent;
+                alert('Error refining results: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            resultsLoading.style.display = 'none';
+            resultsContent.innerHTML = currentContent;
+            alert('Error refining results. Please try again.');
+        });
+    });
+});
+</script>
+{% endblock %}

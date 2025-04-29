@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Budget Analysis - {{ project.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .budget-card {
+        border: none;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+    }
+    .ai-recommendations {
+        background-color: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin-top: 1rem;
+        white-space: pre-line;
+    }
+    .budget-chart {
+        height: 300px;
+        margin: 1rem 0;
+    }
+    .analysis-timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+    .analysis-timeline::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background-color: #dee2e6;
+    }
+    .analysis-item {
+        position: relative;
+        padding-bottom: 1.5rem;
+    }
+    .analysis-item::before {
+        content: '';
+        position: absolute;
+        left: -2rem;
+        top: 0.5rem;
+        width: 1rem;
+        height: 1rem;
+        border-radius: 50%;
+        background-color: var(--primary-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>Budget Analysis - {{ project.name }}</h2>
+                <a href="{{ url_for('budget_management') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Budget Management
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Budget Overview -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card budget-card">
+                <div class="card-body">
+                    <h5 class="card-title">Total Budget</h5>
+                    <h2 class="card-text">${{ "%.2f"|format(project.budget|float) }}</h2>
+                    <div class="progress">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: 100%">
+                            100%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card budget-card">
+                <div class="card-body">
+                    <h5 class="card-title">Project Status</h5>
+                    <h2 class="card-text">{{ project.status }}</h2>
+                    <div class="progress">
+                        <div class="progress-bar bg-{{ 'success' if project.status == 'Completed' else 'warning' if project.status == 'In Progress' else 'info' }}" 
+                             role="progressbar" style="width: 100%">
+                            {{ project.status }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card budget-card">
+                <div class="card-body">
+                    <h5 class="card-title">Last Analysis</h5>
+                    <h2 class="card-text">{{ analysis[0].created_at if analysis else 'Never' }}</h2>
+                    <div class="progress">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: 100%">
+                            {{ analysis|length }} Analyses
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Recommendations -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">AI Budget Recommendations</h5>
+                </div>
+                <div class="card-body">
+                    {% if analysis %}
+                        {% for item in analysis %}
+                        <div class="analysis-item">
+                            <h6>Analysis from {{ item.created_at }}</h6>
+                            <div class="ai-recommendations">
+                                {{ item.recommendations }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <p class="text-muted">No budget analysis available yet.</p>
+                            <a href="{{ url_for('budget_management') }}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Add Budget Analysis
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Budget History -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Budget History</h5>
+                </div>
+                <div class="card-body">
+                    <div class="analysis-timeline">
+                        {% if analysis %}
+                            {% for item in analysis %}
+                            <div class="analysis-item">
+                                <h6>{{ item.created_at }}</h6>
+                                <p class="mb-1">Total Budget: ${{ "%.2f"|format(item.total_budget|float) }}</p>
+                                {% if item.original_breakdown %}
+                                <p class="text-muted">Original Breakdown: {{ item.original_breakdown }}</p>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-4">
+                                <p class="text-muted">No budget history available.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
